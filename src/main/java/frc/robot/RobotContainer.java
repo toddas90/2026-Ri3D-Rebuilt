@@ -10,12 +10,14 @@ import frc.robot.subsystems.Drive.DriveIO;
 import frc.robot.subsystems.Drive.DriveIOSim;
 import frc.robot.subsystems.Drive.DriveIOSparkMax;
 import frc.robot.subsystems.Drive.GyroIO;
-import frc.robot.subsystems.Drive.GyroIONavX;
 import frc.robot.subsystems.Drive.GyroIOSim;
+import frc.robot.subsystems.Drive.GyroIONavX;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+
+import frc.robot.commands.DriveIntakeForwardCommand;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -76,6 +78,22 @@ public class RobotContainer {
   private void configureDefaultCommands() {
     // Set default command for drive to field-oriented control
     m_drive.setDefaultCommand(
+      // new DriveIntakeForwardCommand(
+      //     m_drive,
+      //     () -> {
+      //       double xSpeed = -m_driverController.getLeftY(); // Forward/backward (inverted)
+      //       xSpeed = MathUtil.applyDeadband(xSpeed, DEADBAND);
+      //       xSpeed = Math.copySign(xSpeed * xSpeed, xSpeed);
+      //       return xSpeed;
+      //     },
+      //     () -> {
+      //       double ySpeed = -m_driverController.getLeftX(); // Left/right (inverted)
+      //       ySpeed = MathUtil.applyDeadband(ySpeed, DEADBAND);
+      //       ySpeed = Math.copySign(ySpeed * ySpeed, ySpeed);
+      //       return ySpeed;
+      //     }
+      // )
+      // ----- ^ Weird intake-centric drive ^ -----
         Commands.run(
             () -> {
               // Get joystick inputs

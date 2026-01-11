@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
@@ -41,6 +42,12 @@ public final class Constants {
     public static final int kFrontRightMotorId = 2;
     public static final int kRearLeftMotorId = 3;
     public static final int kRearRightMotorId = 4;
+
+    // Wheel offsets from robot center (in meters)
+    public static final Translation2d kFrontLeftWheelOffset = new Translation2d(0.3, 0.3);
+    public static final Translation2d kFrontRightWheelOffset = new Translation2d(0.3, -0.3);
+    public static final Translation2d kRearLeftWheelOffset = new Translation2d(-0.3, 0.3);
+    public static final Translation2d kRearRightWheelOffset = new Translation2d(-0.3, -0.3);
     
     // Motor configuration
     public static final int kCurrentLimit = 40; // Amps

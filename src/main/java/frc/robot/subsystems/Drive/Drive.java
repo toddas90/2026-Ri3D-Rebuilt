@@ -3,7 +3,6 @@ package frc.robot.subsystems.Drive;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
 import edu.wpi.first.math.kinematics.MecanumDriveOdometry;
@@ -30,7 +29,7 @@ public class Drive extends SubsystemBase {
     private MecanumDriveWheelPositions wheelPositions = new MecanumDriveWheelPositions();
     private ChassisSpeeds currentSpeeds = new ChassisSpeeds();
     
-    // Track time for velocity integration (since no encoders)
+    // Track time for velocity integration
     private double lastTime = 0;
     
     public Drive(DriveIO io, GyroIO gyroIO) {
@@ -38,12 +37,11 @@ public class Drive extends SubsystemBase {
         this.gyroIO = gyroIO;
         
         // Initialize kinematics with wheel locations (in meters)
-        // Adjust these values based on your robot dimensions
         kinematics = new MecanumDriveKinematics(
-            new Translation2d(0.3, 0.3),   // Front left
-            new Translation2d(0.3, -0.3),  // Front right  
-            new Translation2d(-0.3, 0.3),  // Rear left
-            new Translation2d(-0.3, -0.3)  // Rear right
+            DriveConstants.kFrontLeftWheelOffset,
+            DriveConstants.kFrontRightWheelOffset,
+            DriveConstants.kRearLeftWheelOffset,
+            DriveConstants.kRearRightWheelOffset
         );
         
         // Initialize odometry
@@ -65,14 +63,22 @@ public class Drive extends SubsystemBase {
         gyroIO.updateInputs(gyroInputs);
         Logger.processInputs("Drive/Gyro", gyroInputs);
         
+        // Update simulated sensors if in simulation
+        if (gyroIO instanceof GyroIOSim && currentSpeeds != null) {
+            ((GyroIOSim) gyroIO).setYawVelocity(currentSpeeds.omegaRadiansPerSecond);
+        }
+        
         // Update pose estimation
         updateOdometry();
         
-        // Log pose
+        // Log pose and velocity data
         Logger.recordOutput("Drive/Pose", getPose());
         Logger.recordOutput("Drive/FieldX", getPose().getX());
         Logger.recordOutput("Drive/FieldY", getPose().getY());
         Logger.recordOutput("Drive/FieldRotation", getPose().getRotation().getDegrees());
+        Logger.recordOutput("Drive/VelocityX", currentSpeeds.vxMetersPerSecond);
+        Logger.recordOutput("Drive/VelocityY", currentSpeeds.vyMetersPerSecond);
+        Logger.recordOutput("Drive/VelocityOmega", currentSpeeds.omegaRadiansPerSecond);
     }
     
     private void updateOdometry() {
@@ -80,16 +86,18 @@ public class Drive extends SubsystemBase {
         double dt = currentTime - lastTime;
         lastTime = currentTime;
         
-        // Since we don't have encoders, estimate wheel positions by integrating velocities
-        // This is VERY approximate and will drift significantly
+        // Convert chassis speeds to individual wheel speeds using kinematics
+        var wheelSpeeds = kinematics.toWheelSpeeds(currentSpeeds);
+        
+        // Update wheel positions by integrating individual wheel velocities
         wheelPositions = new MecanumDriveWheelPositions(
-            wheelPositions.frontLeftMeters + currentSpeeds.vxMetersPerSecond * dt,
-            wheelPositions.frontRightMeters + currentSpeeds.vxMetersPerSecond * dt,
-            wheelPositions.rearLeftMeters + currentSpeeds.vxMetersPerSecond * dt,
-            wheelPositions.rearRightMeters + currentSpeeds.vxMetersPerSecond * dt
+            wheelPositions.frontLeftMeters + wheelSpeeds.frontLeftMetersPerSecond * dt,
+            wheelPositions.frontRightMeters + wheelSpeeds.frontRightMetersPerSecond * dt,
+            wheelPositions.rearLeftMeters + wheelSpeeds.rearLeftMetersPerSecond * dt,
+            wheelPositions.rearRightMeters + wheelSpeeds.rearRightMetersPerSecond * dt
         );
         
-        // Update odometry with gyro angle and estimated wheel positions
+        // Update odometry with gyro angle and wheel positions
         odometry.update(gyroInputs.yawPosition, wheelPositions);
     }
     
@@ -134,7 +142,7 @@ public class Drive extends SubsystemBase {
         rotation = MathUtil.clamp(rotation, -1.0, 1.0);
         
         // Calculate mecanum drive wheel speeds
-        MecanumDrive.WheelSpeeds wheelSpeeds = MecanumDrive.driveCartesianIK(ySpeed, xSpeed, rotation);
+        MecanumDrive.WheelSpeeds wheelSpeeds = MecanumDrive.driveCartesianIK(xSpeed, ySpeed, rotation);
         
         // Convert to voltages and send to motors
         io.setVoltage(
@@ -147,9 +155,9 @@ public class Drive extends SubsystemBase {
         // Store current speeds for odometry estimation (convert to m/s)
         // Assuming max speed of ~3 m/s at full throttle (adjust based on your robot)
         currentSpeeds = new ChassisSpeeds(
-            xSpeed * 3.0,  // Convert to m/s
-            ySpeed * 3.0,  // Convert to m/s
-            rotation * Math.PI * 2  // Convert to rad/s (assuming ~1 rotation per second at full)
+            xSpeed * DriveConstants.kMaxSpeedMetersPerSecond,
+            ySpeed * DriveConstants.kMaxSpeedMetersPerSecond,
+            rotation * DriveConstants.kMaxAngularSpeedRadiansPerSecond
         );
     }
     
@@ -167,8 +175,8 @@ public class Drive extends SubsystemBase {
         
         // Calculate mecanum drive wheel speeds with field orientation
         MecanumDrive.WheelSpeeds wheelSpeeds = MecanumDrive.driveCartesianIK(
-            ySpeed, 
             xSpeed, 
+            ySpeed, 
             rotation, 
             gyroInputs.yawPosition
         );
@@ -183,9 +191,9 @@ public class Drive extends SubsystemBase {
         
         // Store field-relative speeds for odometry
         currentSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-            xSpeed * 3.0,  // Convert to m/s
-            ySpeed * 3.0,  // Convert to m/s
-            rotation * Math.PI * 2,  // Convert to rad/s
+            xSpeed * DriveConstants.kMaxSpeedMetersPerSecond,
+            ySpeed * DriveConstants.kMaxSpeedMetersPerSecond,
+            rotation * DriveConstants.kMaxAngularSpeedRadiansPerSecond,
             gyroInputs.yawPosition
         );
     }
@@ -195,6 +203,7 @@ public class Drive extends SubsystemBase {
      */
     public void stop() {
         io.stop();
+        currentSpeeds = new ChassisSpeeds();
     }
     
     /**
@@ -218,5 +227,13 @@ public class Drive extends SubsystemBase {
      */
     public double getAngularVelocity() {
         return gyroInputs.yawVelocityRadPerSec;
+    }
+    
+    /**
+     * Get the current estimated velocity
+     * @return Current velocity as a ChassisSpeeds object
+     */
+    public ChassisSpeeds getVelocity() {
+        return currentSpeeds;
     }
 }

@@ -1,31 +1,24 @@
 package frc.robot.subsystems.Drive;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Timer;
 
 public class GyroIOSim implements GyroIO {
     private double yawPositionRad = 0.0;
     private double yawVelocityRadPerSec = 0.0;
-    private double lastYawVelocityRadPerSec = 0.0;
-    
-    // Simulation constants
-    private static final double LOOP_PERIOD_SECS = 0.02;
+    private double lastUpdateTime = 0.0;
     
     public GyroIOSim() {
-        // Initialize at zero
-        reset();
+        lastUpdateTime = Timer.getFPGATimestamp();
     }
     
     @Override
     public void updateInputs(GyroIOInputs inputs) {
-        // In simulation, we'll need to integrate angular velocity from the drive system
-        // This is a simplified model - in reality you'd calculate this from wheel speeds
-        yawPositionRad += yawVelocityRadPerSec * LOOP_PERIOD_SECS;
-        
-        inputs.connected = true; // Always connected in sim
+        inputs.connected = true;
         inputs.yawPosition = new Rotation2d(yawPositionRad);
         inputs.yawVelocityRadPerSec = yawVelocityRadPerSec;
         
-        // Pitch and roll stay at zero in sim (robot on flat ground)
+        // For simulation, pitch and roll remain at 0
         inputs.pitchPositionRad = 0.0;
         inputs.pitchVelocityRadPerSec = 0.0;
         inputs.rollPositionRad = 0.0;
@@ -44,10 +37,15 @@ public class GyroIOSim implements GyroIO {
     }
     
     /**
-     * Set the angular velocity for simulation
-     * This should be called by the drive subsystem based on wheel speeds
+     * Update the simulated gyro with the commanded angular velocity
+     * This should be called from the Drive subsystem in simulation
      */
-    public void setAngularVelocity(double radPerSec) {
-        yawVelocityRadPerSec = radPerSec;
+    public void setYawVelocity(double velocityRadPerSec) {
+        double currentTime = Timer.getFPGATimestamp();
+        double dt = currentTime - lastUpdateTime;
+        lastUpdateTime = currentTime;
+        
+        yawVelocityRadPerSec = velocityRadPerSec;
+        yawPositionRad += velocityRadPerSec * dt;
     }
 }

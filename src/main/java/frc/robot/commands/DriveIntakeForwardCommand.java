@@ -10,6 +10,9 @@ public class DriveIntakeForwardCommand extends Command {
     private final java.util.function.DoubleSupplier xSpeedSupplier;
     private final java.util.function.DoubleSupplier ySpeedSupplier;
     
+    private double lastKnownAngle = 0.0; // Remember the last valid stick direction
+    private static final double JOYSTICK_DEADBAND = 0.1; // Minimum stick magnitude to update direction
+    
     public DriveIntakeForwardCommand(Drive drive, 
                                      java.util.function.DoubleSupplier xSpeedSupplier,
                                      java.util.function.DoubleSupplier ySpeedSupplier) {
@@ -24,8 +27,17 @@ public class DriveIntakeForwardCommand extends Command {
         double xSpeed = xSpeedSupplier.getAsDouble();
         double ySpeed = ySpeedSupplier.getAsDouble();
         
-        // Calculate desired angle from joystick inputs
-        double desiredAngle = Math.atan2(ySpeed, xSpeed);
+        // Calculate joystick magnitude
+        double magnitude = Math.hypot(xSpeed, ySpeed);
+        
+        // Only update desired angle if joystick is beyond deadband
+        double desiredAngle;
+        if (magnitude > JOYSTICK_DEADBAND) {
+            desiredAngle = Math.atan2(ySpeed, xSpeed);
+            lastKnownAngle = desiredAngle; // Update last known direction
+        } else {
+            desiredAngle = lastKnownAngle; // Use last known direction
+        }
         
         // Get current robot heading
         double currentAngle = drive.getHeading().getRadians();

@@ -14,9 +14,8 @@ public class DriveIOSim implements DriveIO {
     private final DCMotorSim rearRightSim;
     
     // Robot constants for simulation
-    private static final double GEAR_RATIO = 8.45; // Typical for Toughbox Mini
-    private static final double WHEEL_RADIUS_METERS = 0.0762; // 6 inch wheels
-    private static final double MOI = 0.025; // Moment of inertia (kg*m^2) - estimated
+    private static final double GEAR_RATIO = 6; // Ballpark
+    private static final double MOI = 7.5; // Moment of inertia (kg*m^2) - Waaaay ballpark (0.025)
     
     // Applied voltages for logging
     private double frontLeftAppliedVolts = 0.0;
