@@ -35,6 +35,12 @@ public final class Constants {
     public static final int kOperatorControllerPort = 1;
     public static final double kControllerDeadband = 0.05;
   }
+
+  public static class ShooterConstants {
+    // Indexer motor CAN ID
+    public static final int kIndexerMotorId = 5;
+    public static final int kIndexerCurrentLimit = 20; // Amps
+  }
   
   public static class DriveConstants {
     // Motor CAN IDs

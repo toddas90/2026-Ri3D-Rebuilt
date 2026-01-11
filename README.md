@@ -1,5 +1,28 @@
 # Code
 
+## Vision Stuff
+
+### Tower April Tags
+**Blue**: 
+Right Far: 18
+Right Close: 27
+Front Right: 26
+Front Left: 25
+Left Close: 24
+Left Far: 21
+Back Right: 19
+Back Left: 20
+
+**Red**:
+Right Far: 2
+Right Close: 11
+Front Right: 10
+Front Left: 9
+Left Close: 8
+Left Far: 5
+Back Right: 3
+Back Left: 4
+
 ### Andrew Notes (end of night 1):
 Added a drive subsystem and the vision subsystem from Advantage Kit.
 

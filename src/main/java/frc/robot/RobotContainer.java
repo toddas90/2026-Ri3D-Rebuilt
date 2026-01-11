@@ -13,10 +13,11 @@ import frc.robot.subsystems.Drive.GyroIO;
 import frc.robot.subsystems.Drive.GyroIOSim;
 import frc.robot.subsystems.Drive.GyroIONavX;
 import frc.robot.subsystems.Vision.Vision;
-import frc.robot.subsystems.Vision.VisionIO;
 import frc.robot.subsystems.Vision.VisionIOPhotonVision;
 import frc.robot.subsystems.Vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.Vision.VisionConstants;
+import frc.robot.subsystems.Shooter.Shooter;
+import frc.robot.subsystems.Shooter.Indexer;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -34,6 +35,9 @@ public class RobotContainer {
   // The robot's subsystems
   private final Drive m_drive;
   private final Vision m_vision;
+
+  // private final Shooter m_shooter;
+  // private final Indexer m_indexer;
 
   // Controllers
   private final CommandXboxController m_driverController =

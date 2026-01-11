@@ -1,0 +1,38 @@
+{
+    "fileName": "Phoenix5.json",
+    "name": "CTRE-Phoenix (v5)",
+    "version": "5.35.1",
+    "frcYear": "2026",
+    "uuid": "ab676553-b602-441f-a38d-f1296df14f72",
+    "mavenUrls": [
+        "https://maven.ctr-electronics.com/release/"
+    ],
+    "jsonUrl": "https://maven.ctr-electronics.com/release/com/ctre/phoenix/Phoenix5-frc2025-latest.json",
+    "javaDependencies": [
+        {
+            "groupId": "com.ctre.phoenix",
+            "artifactId": "api-java",
+            "version": "5.35.1"
+        },
+        {
+            "groupId": "com.ctre.phoenix",
+            "artifactId": "wpiapi-java",
+            "version": "5.35.1"
+        }
+    ],
+    "jniDependencies": [
+        {
+            "groupId": "com.ctre.phoenix",
+            "artifactId": "cci",
+            "version": "5.35.1",
+            "isJar": false,
+            "skipInvalidPlatforms": true,
+            "validPlatforms": [
+                "windowsx86-64",
+                "linuxx86-64",
+                "linuxathena"
+            ]
+        }
+    ],
+    "cppDependencies": []
+}
