@@ -12,6 +12,11 @@ import frc.robot.subsystems.Drive.DriveIOSparkMax;
 import frc.robot.subsystems.Drive.GyroIO;
 import frc.robot.subsystems.Drive.GyroIOSim;
 import frc.robot.subsystems.Drive.GyroIONavX;
+import frc.robot.subsystems.Vision.Vision;
+import frc.robot.subsystems.Vision.VisionIO;
+import frc.robot.subsystems.Vision.VisionIOPhotonVision;
+import frc.robot.subsystems.Vision.VisionIOPhotonVisionSim;
+import frc.robot.subsystems.Vision.VisionConstants;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -28,6 +33,7 @@ import frc.robot.commands.DriveIntakeForwardCommand;
 public class RobotContainer {
   // The robot's subsystems
   private final Drive m_drive;
+  private final Vision m_vision;
 
   // Controllers
   private final CommandXboxController m_driverController =
@@ -45,12 +51,29 @@ public class RobotContainer {
     switch (Constants.currentMode) {
       case REAL:
         m_drive = new Drive(new DriveIOSparkMax(), new GyroIONavX());
+        m_vision = new Vision(
+            m_drive::addVisionMeasurement,
+            new VisionIOPhotonVision(VisionConstants.camera0Name, VisionConstants.robotToCamera0),
+            new VisionIOPhotonVision(VisionConstants.camera1Name, VisionConstants.robotToCamera1)
+        );
         break;
       case SIM:
         m_drive = new Drive(new DriveIOSim(), new GyroIOSim());
+        m_vision = new Vision(
+            m_drive::addVisionMeasurement,
+            new VisionIOPhotonVisionSim(
+                VisionConstants.camera0Name, 
+                VisionConstants.robotToCamera0, 
+                m_drive::getPose),
+            new VisionIOPhotonVisionSim(
+                VisionConstants.camera1Name, 
+                VisionConstants.robotToCamera1, 
+                m_drive::getPose)
+        );
         break;
       default:
         m_drive = new Drive(new DriveIO() {}, new GyroIO() {});
+        m_vision = new Vision(m_drive::addVisionMeasurement);
     }
 
     // Configure the trigger bindings
@@ -64,6 +87,9 @@ public class RobotContainer {
     // Driver Controller bindings
     // Reset gyro with Start button
     m_driverController.start().onTrue(Commands.runOnce(() -> m_drive.resetGyro()));
+    
+    // Reset pose with Back button
+    m_driverController.back().onTrue(Commands.runOnce(() -> m_drive.resetPose()));
     
     // Operator Controller bindings
   }

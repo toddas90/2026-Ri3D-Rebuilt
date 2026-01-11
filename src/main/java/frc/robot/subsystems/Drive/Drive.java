@@ -1,12 +1,15 @@
 package frc.robot.subsystems.Drive;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.estimator.MecanumDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.MecanumDriveKinematics;
-import edu.wpi.first.math.kinematics.MecanumDriveOdometry;
 import edu.wpi.first.math.kinematics.MecanumDriveWheelPositions;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
@@ -23,9 +26,9 @@ public class Drive extends SubsystemBase {
     
     private static final double MAX_VOLTAGE = DriveConstants.kMaxVoltage;
     
-    // Add kinematics and odometry
+    // Add kinematics and pose estimator
     private final MecanumDriveKinematics kinematics;
-    private final MecanumDriveOdometry odometry;
+    private final MecanumDrivePoseEstimator poseEstimator;
     private MecanumDriveWheelPositions wheelPositions = new MecanumDriveWheelPositions();
     private ChassisSpeeds currentSpeeds = new ChassisSpeeds();
     
@@ -44,8 +47,8 @@ public class Drive extends SubsystemBase {
             DriveConstants.kRearRightWheelOffset
         );
         
-        // Initialize odometry
-        odometry = new MecanumDriveOdometry(
+        // Initialize pose estimator (replaces odometry for vision fusion)
+        poseEstimator = new MecanumDrivePoseEstimator(
             kinematics,
             new Rotation2d(),
             wheelPositions,
@@ -97,8 +100,18 @@ public class Drive extends SubsystemBase {
             wheelPositions.rearRightMeters + wheelSpeeds.rearRightMetersPerSecond * dt
         );
         
-        // Update odometry with gyro angle and wheel positions
-        odometry.update(gyroInputs.yawPosition, wheelPositions);
+        // Update pose estimator with gyro angle and wheel positions
+        poseEstimator.update(gyroInputs.yawPosition, wheelPositions);
+    }
+    
+    /**
+     * Add a vision measurement to the pose estimator
+     * @param visionPose The pose measured by vision
+     * @param timestamp The timestamp of the measurement
+     * @param stdDevs Standard deviations for the measurement (x, y, theta)
+     */
+    public void addVisionMeasurement(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {
+        poseEstimator.addVisionMeasurement(visionPose, timestamp, stdDevs);
     }
     
     /**
@@ -106,16 +119,16 @@ public class Drive extends SubsystemBase {
      * @return Current pose
      */
     public Pose2d getPose() {
-        return odometry.getPoseMeters();
+        return poseEstimator.getEstimatedPosition();
     }
     
     /**
-     * Reset odometry to a specific pose
+     * Reset pose estimator to a specific pose
      * @param pose The pose to reset to
      */
     public void resetPose(Pose2d pose) {
         wheelPositions = new MecanumDriveWheelPositions();
-        odometry.resetPosition(
+        poseEstimator.resetPosition(
             gyroInputs.yawPosition,
             wheelPositions,
             pose
@@ -123,7 +136,7 @@ public class Drive extends SubsystemBase {
     }
     
     /**
-     * Reset odometry to origin
+     * Reset pose estimator to origin
      */
     public void resetPose() {
         resetPose(new Pose2d());
@@ -153,7 +166,6 @@ public class Drive extends SubsystemBase {
         );
         
         // Store current speeds for odometry estimation (convert to m/s)
-        // Assuming max speed of ~3 m/s at full throttle (adjust based on your robot)
         currentSpeeds = new ChassisSpeeds(
             xSpeed * DriveConstants.kMaxSpeedMetersPerSecond,
             ySpeed * DriveConstants.kMaxSpeedMetersPerSecond,
