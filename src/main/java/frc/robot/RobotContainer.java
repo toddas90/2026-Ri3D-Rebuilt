@@ -60,21 +60,14 @@ public class RobotContainer {
     configureDefaultCommands();
   }
 
-  /**
-   * Use this method to define your trigger->command mappings.
-   */
   private void configureBindings() {
     // Driver Controller bindings
     // Reset gyro with Start button
     m_driverController.start().onTrue(Commands.runOnce(() -> m_drive.resetGyro()));
     
     // Operator Controller bindings
-    // (Empty for now - add bindings here as needed)
   }
 
-  /**
-   * Configure default commands for subsystems
-   */
   private void configureDefaultCommands() {
     // Set default command for drive to field-oriented control
     m_drive.setDefaultCommand(

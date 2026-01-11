@@ -28,7 +28,6 @@ public class DriveIOSim implements DriveIO {
     
     public DriveIOSim() {
         // Initialize motor simulators with CIM motor model
-        // Using LinearSystemId to create the motor plant
         frontLeftSim = new DCMotorSim(
             LinearSystemId.createDCMotorSystem(DCMotor.getCIM(1), MOI, GEAR_RATIO),
             DCMotor.getCIM(1)
