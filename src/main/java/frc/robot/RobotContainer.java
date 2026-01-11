@@ -16,7 +16,7 @@ import frc.robot.subsystems.Vision.Vision;
 import frc.robot.subsystems.Vision.VisionIOPhotonVision;
 import frc.robot.subsystems.Vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.Vision.VisionConstants;
-import frc.robot.subsystems.Shooter.Shooter;
+import frc.robot.subsystems.Shooter.Turret;
 import frc.robot.subsystems.Shooter.Indexer;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;

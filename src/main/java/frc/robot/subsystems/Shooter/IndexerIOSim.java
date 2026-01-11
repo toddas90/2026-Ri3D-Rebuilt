@@ -10,7 +10,7 @@ public class IndexerIOSim implements IndexerIO {
     private final DCMotorSim indexerMotor;
 
     // Robot constants for simulation
-    private static final double GEAR_RATIO = 6; // Ballpark
+    private static final double GEAR_RATIO = 10; // Ballpark
     private static final double MOI = 0.025; // Moment of inertia (kg*m^2)
     
     // Applied voltages for logging
