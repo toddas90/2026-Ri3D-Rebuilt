@@ -5,12 +5,17 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.Autos;
-import frc.robot.commands.ExampleCommand;
-import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.subsystems.Drive.Drive;
+import frc.robot.subsystems.Drive.DriveIO;
+import frc.robot.subsystems.Drive.DriveIOSim;
+import frc.robot.subsystems.Drive.DriveIOSparkMax;
+import frc.robot.subsystems.Drive.GyroIO;
+import frc.robot.subsystems.Drive.GyroIONavX;
+import frc.robot.subsystems.Drive.GyroIOSim;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -19,36 +24,81 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-  // The robot's subsystems and commands are defined here...
-  private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
+  // The robot's subsystems
+  private final Drive m_drive;
 
-  // Replace with CommandPS4Controller or CommandJoystick if needed
+  // Controllers
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
+  
+  // Add operator controller on port 1
+  private final CommandXboxController m_operatorController =
+      new CommandXboxController(OperatorConstants.kOperatorControllerPort);
+
+  // Deadband for joystick inputs
+  private static final double DEADBAND = OperatorConstants.kControllerDeadband;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    switch (Constants.currentMode) {
+      case REAL:
+        m_drive = new Drive(new DriveIOSparkMax(), new GyroIONavX());
+        break;
+      case SIM:
+        m_drive = new Drive(new DriveIOSim(), new GyroIOSim());
+        break;
+      default:
+        m_drive = new Drive(new DriveIO() {}, new GyroIO() {});
+    }
+
     // Configure the trigger bindings
     configureBindings();
+    
+    // Configure default commands
+    configureDefaultCommands();
   }
 
   /**
-   * Use this method to define your trigger->command mappings. Triggers can be created via the
-   * {@link Trigger#Trigger(java.util.function.BooleanSupplier)} constructor with an arbitrary
-   * predicate, or via the named factories in {@link
-   * edu.wpi.first.wpilibj2.command.button.CommandGenericHID}'s subclasses for {@link
-   * CommandXboxController Xbox}/{@link edu.wpi.first.wpilibj2.command.button.CommandPS4Controller
-   * PS4} controllers or {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight
-   * joysticks}.
+   * Use this method to define your trigger->command mappings.
    */
   private void configureBindings() {
-    // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-    new Trigger(m_exampleSubsystem::exampleCondition)
-        .onTrue(new ExampleCommand(m_exampleSubsystem));
+    // Driver Controller bindings
+    // Reset gyro with Start button
+    m_driverController.start().onTrue(Commands.runOnce(() -> m_drive.resetGyro()));
+    
+    // Operator Controller bindings
+    // (Empty for now - add bindings here as needed)
+  }
 
-    // Schedule `exampleMethodCommand` when the Xbox controller's B button is pressed,
-    // cancelling on release.
-    m_driverController.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
+  /**
+   * Configure default commands for subsystems
+   */
+  private void configureDefaultCommands() {
+    // Set default command for drive to field-oriented control
+    m_drive.setDefaultCommand(
+        Commands.run(
+            () -> {
+              // Get joystick inputs
+              double xSpeed = -m_driverController.getLeftY(); // Forward/backward (inverted)
+              double ySpeed = -m_driverController.getLeftX(); // Left/right (inverted)
+              double rotation = -m_driverController.getRightX(); // Rotation (inverted)
+              
+              // Apply deadband
+              xSpeed = MathUtil.applyDeadband(xSpeed, DEADBAND);
+              ySpeed = MathUtil.applyDeadband(ySpeed, DEADBAND);
+              rotation = MathUtil.applyDeadband(rotation, DEADBAND);
+              
+              // Square inputs for finer control (while preserving sign)
+              xSpeed = Math.copySign(xSpeed * xSpeed, xSpeed);
+              ySpeed = Math.copySign(ySpeed * ySpeed, ySpeed);
+              rotation = Math.copySign(rotation * rotation, rotation);
+              
+              // Drive field-oriented
+              m_drive.driveFieldOriented(xSpeed, ySpeed, rotation);
+            },
+            m_drive
+        )
+    );
   }
 
   /**
@@ -57,7 +107,12 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // An example command will be run in autonomous
-    return Autos.exampleAuto(m_exampleSubsystem);
+    // Return a simple auto that drives forward for 2 seconds
+    return Commands.sequence(
+        Commands.runOnce(() -> m_drive.resetGyro()),
+        Commands.run(() -> m_drive.drive(0.3, 0, 0))
+            .withTimeout(2.0)
+            .finallyDo(() -> m_drive.stop())
+    );
   }
 }
