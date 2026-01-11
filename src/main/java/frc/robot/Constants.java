@@ -44,10 +44,10 @@ public final class Constants {
     public static final int kRearRightMotorId = 4;
 
     // Wheel offsets from robot center (in meters)
-    public static final Translation2d kFrontLeftWheelOffset = new Translation2d(0.3, 0.3);
-    public static final Translation2d kFrontRightWheelOffset = new Translation2d(0.3, -0.3);
-    public static final Translation2d kRearLeftWheelOffset = new Translation2d(-0.3, 0.3);
-    public static final Translation2d kRearRightWheelOffset = new Translation2d(-0.3, -0.3);
+    public static final Translation2d kFrontLeftWheelOffset = new Translation2d(-0.37, 0.2);
+    public static final Translation2d kFrontRightWheelOffset = new Translation2d(0.37, 0.2);
+    public static final Translation2d kRearLeftWheelOffset = new Translation2d(0.37, -0.2);
+    public static final Translation2d kRearRightWheelOffset = new Translation2d(-0.37, -0.2);
     
     // Motor configuration
     public static final int kCurrentLimit = 40; // Amps
