@@ -4,17 +4,32 @@ import org.littletonrobotics.junction.AutoLog;
 
 public interface TurretIO {
   @AutoLog
-  public static class ShooterIOInputs {
-        // public double indexerVoltage = 0.0;
-        // public double indexerCurrent = 0.0;
+  public static class TurretIOInputs {
+        public double flywheelVoltage = 0.0;
+        public double flywheelCurrent = 0.0;
+        public double turretAngleDegrees = 0.0;
+        public double hoodAngleDegrees = 0.0;
+        public double turretCurrent = 0.0;
+        public double hoodCurrent = 0.0;
+        public double turretVoltage = 0.0;
+        public double hoodVoltage = 0.0;
+        public double flywheelVelocityRPM = 0.0;  // Add this
   }
 
     /** Updates the set of loggable inputs */
-    public default void updateInputs(ShooterIOInputs inputs) {}
+    public default void updateInputs(TurretIOInputs inputs) {}
     
-    /** Run the motor at specified voltages */
-    public default void setVoltage(double voltage) {}
-    
-    /** Stop motor */
-    public default void stop() {}    
+    /** Run the motor at specified voltage */
+    public default void setFlywheelVoltage(double voltage) {}
+    public default void setHoodVoltage(double voltage) {}
+    public default void setTurretVoltage(double voltage) {}
+
+    /** Stop motors */
+    public default void stop() {}
+
+    /** Set the turret motor  */
+    public default void setTurretAngle(double angleDegrees) {}
+
+    /** Set the hood angle */
+    public default void setHoodAngle(double angleDegrees) {}
 }

@@ -40,6 +40,38 @@ public final class Constants {
     // Indexer motor CAN ID
     public static final int kIndexerMotorId = 5;
     public static final int kIndexerCurrentLimit = 20; // Amps
+    
+    // Turret motor CAN IDs
+    public static final int kTurretMotorId = 6;
+    public static final int kHoodMotorId = 7;
+    public static final int kFlywheelMotorId = 8;
+    
+    // Current limits
+    public static final int kTurretCurrentLimit = 30; // Amps
+    public static final int kHoodCurrentLimit = 20; // Amps
+    public static final int kFlywheelCurrentLimit = 40; // Amps
+    
+    // Gear ratios / conversion factors
+    public static final double kTurretDegreesPerRotation = 360.0 / 50.0; // 50:1 gear ratio
+    public static final double kHoodDegreesPerRotation = 360.0 / 25.0;   // 25:1 gear ratio
+    
+    // Turret angle limits (degrees)
+    public static final double kTurretMinAngle = -180.0;
+    public static final double kTurretMaxAngle = 180.0;
+    
+    // Hood angle limits (degrees)
+    public static final double kHoodMinAngle = 0.0;
+    public static final double kHoodMaxAngle = 60.0;
+    
+    // PID gains for turret position control
+    public static final double kTurretP = 0.1;
+    public static final double kTurretI = 0.0;
+    public static final double kTurretD = 0.01;
+    
+    // PID gains for hood position control
+    public static final double kHoodP = 0.15;
+    public static final double kHoodI = 0.0;
+    public static final double kHoodD = 0.01;
   }
   
   public static class DriveConstants {
