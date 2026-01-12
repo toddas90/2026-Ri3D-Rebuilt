@@ -5,6 +5,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.Constants.ShooterConstants;
+import org.littletonrobotics.junction.Logger;
 
 public class AimingCalculator {
     
@@ -42,6 +43,12 @@ public class AimingCalculator {
         double angleDegrees = Math.toDegrees(robotRelativeAngle);
         angleDegrees = normalizeAngle(angleDegrees);
         
+        // Log intermediate calculations
+        String side = turretOnLeft ? "Left" : "Right";
+        Logger.recordOutput("AimingCalculator/" + side + "/FieldAngleToTarget", Math.toDegrees(fieldAngleToTarget));
+        Logger.recordOutput("AimingCalculator/" + side + "/RobotAngle", Math.toDegrees(robotAngle));
+        Logger.recordOutput("AimingCalculator/" + side + "/RobotRelativeAngle", angleDegrees);
+        
         // Adjust based on which side the turret is on
         // Left turret faces left (+90 from front), right turret faces right (-90 from front)
         if (turretOnLeft) {
@@ -50,7 +57,10 @@ public class AimingCalculator {
             angleDegrees += 90; // Turret's forward is robot's right
         }
         
-        return normalizeAngle(angleDegrees);
+        double normalizedAngle = normalizeAngle(angleDegrees);
+        Logger.recordOutput("AimingCalculator/" + side + "/TurretAngle", normalizedAngle);
+        
+        return normalizedAngle;
     }
     
     /**
@@ -60,11 +70,17 @@ public class AimingCalculator {
      * @return True if the turret can physically reach this angle
      */
     public static boolean canTurretReachAngle(double turretAngle, boolean turretOnLeft) {
+        boolean canReach;
         if (turretOnLeft) {
-            return turretAngle >= LEFT_TURRET_MIN_ANGLE && turretAngle <= LEFT_TURRET_MAX_ANGLE;
+            canReach = turretAngle >= LEFT_TURRET_MIN_ANGLE && turretAngle <= LEFT_TURRET_MAX_ANGLE;
         } else {
-            return turretAngle >= RIGHT_TURRET_MIN_ANGLE && turretAngle <= RIGHT_TURRET_MAX_ANGLE;
+            canReach = turretAngle >= RIGHT_TURRET_MIN_ANGLE && turretAngle <= RIGHT_TURRET_MAX_ANGLE;
         }
+        
+        String side = turretOnLeft ? "Left" : "Right";
+        Logger.recordOutput("AimingCalculator/" + side + "/CanReachAngle", canReach);
+        
+        return canReach;
     }
     
     /**
@@ -74,18 +90,26 @@ public class AimingCalculator {
      * @return The clamped angle within valid range
      */
     public static double clampTurretAngle(double turretAngle, boolean turretOnLeft) {
+        double clampedAngle;
         if (turretOnLeft) {
-            return Math.max(LEFT_TURRET_MIN_ANGLE, Math.min(LEFT_TURRET_MAX_ANGLE, turretAngle));
+            clampedAngle = Math.max(LEFT_TURRET_MIN_ANGLE, Math.min(LEFT_TURRET_MAX_ANGLE, turretAngle));
         } else {
-            return Math.max(RIGHT_TURRET_MIN_ANGLE, Math.min(RIGHT_TURRET_MAX_ANGLE, turretAngle));
+            clampedAngle = Math.max(RIGHT_TURRET_MIN_ANGLE, Math.min(RIGHT_TURRET_MAX_ANGLE, turretAngle));
         }
+        
+        String side = turretOnLeft ? "Left" : "Right";
+        Logger.recordOutput("AimingCalculator/" + side + "/ClampedAngle", clampedAngle);
+        
+        return clampedAngle;
     }
     
     /**
      * Calculate distance to a target
      */
     public static double calculateDistance(Pose2d robotPose, Translation2d targetPosition) {
-        return robotPose.getTranslation().getDistance(targetPosition);
+        double distance = robotPose.getTranslation().getDistance(targetPosition);
+        Logger.recordOutput("AimingCalculator/DistanceToTarget", distance);
+        return distance;
     }
     
     /**
@@ -96,7 +120,13 @@ public class AimingCalculator {
         var alliance = DriverStation.getAlliance();
         boolean isBlue = alliance.isPresent() && alliance.get() == Alliance.Blue;
         
-        return isBlue ? ShooterConstants.BLUE_HUB_POSITION : ShooterConstants.RED_HUB_POSITION;
+        Translation2d position = isBlue ? ShooterConstants.BLUE_HUB_POSITION : ShooterConstants.RED_HUB_POSITION;
+        
+        Logger.recordOutput("AimingCalculator/Alliance", isBlue ? "Blue" : "Red");
+        Logger.recordOutput("AimingCalculator/TargetTowerX", position.getX());
+        Logger.recordOutput("AimingCalculator/TargetTowerY", position.getY());
+        
+        return position;
     }
     
     /**
@@ -106,21 +136,30 @@ public class AimingCalculator {
         var alliance = DriverStation.getAlliance();
         boolean isBlue = alliance.isPresent() && alliance.get() == Alliance.Blue;
         
-        return isBlue ? ShooterConstants.BLUE_DRIVER_STATION : ShooterConstants.RED_DRIVER_STATION;
+        Translation2d position = isBlue ? ShooterConstants.BLUE_DRIVER_STATION : ShooterConstants.RED_DRIVER_STATION;
+        
+        Logger.recordOutput("AimingCalculator/DriverStationX", position.getX());
+        Logger.recordOutput("AimingCalculator/DriverStationY", position.getY());
+        
+        return position;
     }
     
     /**
      * Calculate hood angle based on distance
      */
     public static double calculateHoodAngle(double distanceMeters) {
-        return ShooterConstants.getHoodAngleForDistance(distanceMeters);
+        double angle = ShooterConstants.getHoodAngleForDistance(distanceMeters);
+        Logger.recordOutput("AimingCalculator/HoodAngle", angle);
+        return angle;
     }
     
     /**
      * Calculate flywheel RPM based on distance
      */
     public static double calculateFlywheelRPM(double distanceMeters) {
-        return ShooterConstants.getFlywheelRPMForDistance(distanceMeters);
+        double rpm = ShooterConstants.getFlywheelRPMForDistance(distanceMeters);
+        Logger.recordOutput("AimingCalculator/FlywheelRPM", rpm);
+        return rpm;
     }
     
     /**
@@ -140,6 +179,12 @@ public class AimingCalculator {
             Translation2d targetPosition, 
             boolean turretOnLeft) {
         
+        String side = turretOnLeft ? "Left" : "Right";
+        
+        // Log input parameters
+        Logger.recordOutput("AimingCalculator/" + side + "/RobotPose", robotPose);
+        Logger.recordOutput("AimingCalculator/" + side + "/TargetPosition", new Pose2d(targetPosition, new edu.wpi.first.math.geometry.Rotation2d()));
+        
         double distance = calculateDistance(robotPose, targetPosition);
         double turretAngle = calculateTurretAngle(robotPose, targetPosition, turretOnLeft);
         boolean canReach = canTurretReachAngle(turretAngle, turretOnLeft);
@@ -149,6 +194,13 @@ public class AimingCalculator {
         
         double hoodAngle = calculateHoodAngle(distance);
         double flywheelRPM = calculateFlywheelRPM(distance);
+        
+        // Log output parameters
+        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/TurretAngle", clampedAngle);
+        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/HoodAngle", hoodAngle);
+        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/FlywheelRPM", flywheelRPM);
+        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/Distance", distance);
+        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/CanReach", canReach);
         
         return new AimingParameters(clampedAngle, hoodAngle, flywheelRPM, distance, canReach);
     }

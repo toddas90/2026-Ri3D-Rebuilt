@@ -8,14 +8,14 @@
 package frc.robot.subsystems.Vision;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
+import frc.robot.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 
 public class VisionConstants {
   // AprilTag layout
   public static AprilTagFieldLayout aprilTagLayout =
-      AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded);
+      AprilTagFields.k2026RebuiltAndymark.loadAprilTagLayoutField();
 
   // Camera names, must match names configured on coprocessor
   public static String camera0Name = "camera_0";

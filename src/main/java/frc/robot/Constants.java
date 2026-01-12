@@ -69,7 +69,7 @@ public final class Constants {
     public static final double kTurretD = 0.01;
 
     // PID gains for flywheel velocity control
-    public static final double kFlywheelP = 0.0005;
+    public static final double kFlywheelP = 0.075;
     public static final double kFlywheelI = 0.0;
     public static final double kFlywheelD = 0.0;
     public static final double kFlywheelFF = 0.000175; // Feedforward (V per RPM)
