@@ -43,6 +43,7 @@ Vision improvements and Auto pathing can be completely done right now while we d
 ### Andrew Notes (end of night 2):
 Got physics calculations for shooter working (seems like). Constant auto-lock on the hub unless otherwise told.
 Hood angle, turret angle, and flywheel velocity all calculated as needed. Hopefully takes motion into account.
+The movement compensation is a little jank. ie: can't actually shoot through the lift, but while moving it allows it?
 
 Very tired implementation of climb code. Probably doesn't work. Skeleton of Intake code created.
 
@@ -56,3 +57,4 @@ TODO:
 7. Clean up scattered constants
 8. Map out all of the devices
 9. Probably forgetting things
+10. Fix controls, they're a bit jank atm

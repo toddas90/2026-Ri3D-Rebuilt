@@ -126,20 +126,21 @@ public class RobotContainer {
 
     // ==================== SHOOTING CONTROLS ====================
     
-    // Left Trigger: Aim towards own driver station (shoot back)
-    m_driverController.rightTrigger(0.5).whileTrue( // operator
-        new AimAtTargetCommand(
-            m_leftTurret,
-            m_rightTurret,
-            m_drive::getPose,
-            AimingCalculator::getDriverStationPosition,
-            m_drive::getChassisSpeeds,
-            "DriverStation",
-            MAX_SHOOT_BACK_RPM // Limit RPM for gentler shot
-        )
-    );
+    // TODO: Dumb??
+    // Right Trigger: Aim towards own driver station (shoot back)
+    // m_driverController.rightTrigger(0.5).whileTrue( // operator
+    //     new AimAtTargetCommand(
+    //         m_leftTurret,
+    //         m_rightTurret,
+    //         m_drive::getPose,
+    //         AimingCalculator::getDriverStationPosition,
+    //         m_drive::getChassisSpeeds,
+    //         "DriverStation",
+    //         MAX_SHOOT_BACK_RPM // Limit RPM for gentler shot
+    //     )
+    // );
     
-    // Right Trigger: Aim at hub
+    // TODO: Sleepy speaking? But likely redundant, just use manual shoot since it auto locks to hub
     m_driverController.leftTrigger(0.5).whileTrue( // operator
         new AimAtTargetCommand(
             m_leftTurret,
@@ -147,12 +148,11 @@ public class RobotContainer {
             m_drive::getPose,
             AimingCalculator::getTargetTowerPosition,
             m_drive::getChassisSpeeds,
-            "Tower"
+            "Hub"
         )
     );
-    
-    // ==================== OPERATOR CONTROLLER BINDINGS ====================
 
+    // TODO: Fix jank
     // Manual Turret Aiming - Left Bumper held + Left Stick controls left turret
     m_driverController.leftBumper().whileTrue( // operator
         new ManualTurretAimCommand(
@@ -163,6 +163,7 @@ public class RobotContainer {
         )
     );
 
+    // TODO: Fix jank
     // Manual Turret Aiming - Right Bumper held + Right Stick controls right turret
     m_driverController.rightBumper().whileTrue( // operator
         new ManualTurretAimCommand(
@@ -173,6 +174,7 @@ public class RobotContainer {
         )
     );
     
+    // TODO: Ideally remove. Hard to hold bumpers and move sticks AND press a.
     // A Button: Manual shoot (spin up flywheels and run indexer)
     m_driverController.a().whileTrue( // operator
         new ManualShootCommand(m_leftTurret, m_rightTurret, m_indexer)
@@ -232,7 +234,7 @@ public class RobotContainer {
         m_drive::getPose,
         AimingCalculator::getTargetTowerPosition,
         m_drive::getChassisSpeeds,  // Add velocity supplier
-        "Tower",
+        "Hub",
         0.0  // maxRPM = 0 means no flywheel spin-up
     );
     m_leftTurret.setDefaultCommand(aimAtHubCommand);

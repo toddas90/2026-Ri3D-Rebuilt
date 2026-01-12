@@ -20,8 +20,8 @@ The AimingCalculator implements a projectile motion solver for a dual-turret sho
 - **Right Turret**: (0.2032m forward, -0.3556m right, 0.3556m up)
 
 ### Field of View Constraints
-- **Left Turret**: Can aim anywhere except 75° to 105° (cannot aim directly right)
-- **Right Turret**: Can aim anywhere except -105° to -75° (cannot aim directly left)
+- **Left Turret**: Can aim anywhere except directly right
+- **Right Turret**: Can aim anywhere except directly left
 
 ## Core Physics Equations
 
@@ -110,7 +110,7 @@ robot_relative_angle = field_angle - robot_heading
 ## Optimization Strategy
 
 ### Trajectory Search
-The algorithm iterates through hood angles (15° to 45°) to find the optimal trajectory:
+The algorithm iterates through hood angles (45° to 75°) to find the optimal trajectory:
 
 1. For each hood angle:
    - Calculate required velocity using projectile equation
@@ -159,7 +159,7 @@ The algorithm iterates through hood angles (15° to 45°) to find the optimal tr
 3. **Turret Backlash**: Not explicitly modeled
 
 ### Computational Factors
-1. **Discrete Search**: 5° resolution for hood angle optimization
+1. **Discrete Search**: 1° resolution for hood angle optimization
 2. **Linear Approximation**: Robot motion assumed constant during flight
 3. **Single Point Target**: Does not account for target size
 

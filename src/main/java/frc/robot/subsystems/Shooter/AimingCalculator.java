@@ -90,10 +90,20 @@ public class AimingCalculator {
             isLeftTurret
         );
         
-        // Check if turret can reach this angle
-        boolean canReach = isAngleReachable(turretAngle, isLeftTurret);
+        // Also calculate the current angle (without motion compensation) for reachability check
+        Translation2d currentToTarget = targetPosition.minus(turretFieldPos);
+        double currentFieldAngle = Math.atan2(currentToTarget.getY(), currentToTarget.getX());
+        double currentRobotRelativeAngle = Math.toDegrees(currentFieldAngle - robotPose.getRotation().getRadians());
+        
+        // Normalize current angle to [-180, 180]
+        while (currentRobotRelativeAngle > 180) currentRobotRelativeAngle -= 360;
+        while (currentRobotRelativeAngle < -180) currentRobotRelativeAngle += 360;
+        
+        // Check if turret can reach the current angle (not the predicted one)
+        boolean canReach = isAngleReachable(currentRobotRelativeAngle, isLeftTurret);
         if (!canReach) {
-            turretAngle = clampTurretAngle(turretAngle, isLeftTurret);
+            // If we can't reach it now, clamp the turret angle but don't spin up
+            turretAngle = clampTurretAngle(currentRobotRelativeAngle, isLeftTurret);
         }
         
         // Convert exit velocity to flywheel RPM
@@ -107,6 +117,7 @@ public class AimingCalculator {
         Logger.recordOutput("Aiming/" + side + "/LaunchVelocity_ms", trajectory.launchVelocity); // Unit: m/s
         Logger.recordOutput("Aiming/" + side + "/FlightTime", trajectory.flightTime); // Unit: s
         Logger.recordOutput("Aiming/" + side + "/TurretAngle", turretAngle); // Unit: degrees
+        Logger.recordOutput("Aiming/" + side + "/CurrentAngle", currentRobotRelativeAngle); // Unit: degrees
         Logger.recordOutput("Aiming/" + side + "/Flywheel_RPM", flywheelRPM); // Unit: RPM
         Logger.recordOutput("Aiming/" + side + "/CanReach", canReach); 
         Logger.recordOutput("Aiming/" + side + "/ValidSolutionFound", trajectory.isValidSolution);
@@ -149,7 +160,7 @@ public class AimingCalculator {
         boolean foundValidSolution = false;
         int validSolutionCount = 0;
         
-        for (double hoodAngle = MIN_HOOD_ANGLE; hoodAngle <= MAX_HOOD_ANGLE; hoodAngle += 5.0) {
+        for (double hoodAngle = MIN_HOOD_ANGLE; hoodAngle <= MAX_HOOD_ANGLE; hoodAngle += 1.0) {
             double angleRad = Math.toRadians(hoodAngle);
             
             // Solve projectile motion equation for initial velocity
