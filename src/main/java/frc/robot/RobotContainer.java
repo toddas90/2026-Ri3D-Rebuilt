@@ -65,9 +65,6 @@ public class RobotContainer {
 
   // Deadband for joystick inputs
   private static final double DEADBAND = OperatorConstants.kControllerDeadband;
-  
-  // Max RPM for shooting back to driver station
-  private static final double MAX_SHOOT_BACK_RPM = ShooterConstants.kShootBackRPM;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {

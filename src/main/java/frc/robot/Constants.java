@@ -92,13 +92,11 @@ public final class Constants {
     // Motor CAN IDs
     public static final int kIndexerMotorId = 5;
     public static final int kTurretMotorId = 6;
-    public static final int kHoodMotorId = 7;    // Note: Hood uses servo, not motor
     public static final int kFlywheelMotorId = 8;
     
     // Current limits
     public static final int kIndexerCurrentLimit = 20; // Amps
     public static final int kTurretCurrentLimit = 30; // Amps
-    public static final int kHoodCurrentLimit = 20; // Amps
     public static final int kFlywheelCurrentLimit = 40; // Amps
     
     // Mechanical ratios
@@ -122,11 +120,6 @@ public final class Constants {
     public static final double kFlywheelI = 0.0;
     public static final double kFlywheelD = 0.0;
     public static final double kFlywheelFF = 0.000175; // Feedforward (V per RPM)
-    
-    // Hood PID
-    public static final double kHoodP = 0.15;
-    public static final double kHoodI = 0.0;
-    public static final double kHoodD = 0.01;
 
     // Hardware config
     public static final int kHoodServoChannel = 0; // PWM channel
@@ -140,7 +133,7 @@ public final class Constants {
     public static final double kLaunchEfficiency = 0.80; // Energy transfer efficiency
     
     // Hood angle limits for trajectory
-    public static final double kMinHoodAngle = 45.0; // degrees - distance shot
+    public static final double kMinHoodAngle = 75.0; // degrees - distance shot (45.0 originally)
     public static final double kMaxHoodAngle = 75.0; // degrees - upward shot
     
     // Turret mounting positions (from robot center)
@@ -168,7 +161,6 @@ public final class Constants {
     // ==================== FIELD CONSTANTS ====================
     
     // Shooting parameters
-    public static final double kShootBackRPM = 3000.0; // RPM limit for driver station shots
     public static final double SHOOTER_HEIGHT = 0.381; // 15 inches in meters (deprecated - use turret positions)
     
     // Field-specific constants

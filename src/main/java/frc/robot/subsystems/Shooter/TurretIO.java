@@ -10,9 +10,9 @@ public interface TurretIO {
         public double turretAngleDegrees = 0.0;
         public double hoodAngleDegrees = 0.0;
         public double turretCurrent = 0.0;
-        public double hoodCurrent = 0.0;
+        // public double hoodCurrent = 0.0;
         public double turretVoltage = 0.0;
-        public double hoodVoltage = 0.0;
+        // public double hoodVoltage = 0.0;
         public double flywheelVelocityRPM = 0.0;
         public double flywheelTargetRPM = 0.0;
   }
@@ -22,7 +22,7 @@ public interface TurretIO {
     
     /** Run the motor at specified voltage */
     public default void setFlywheelVoltage(double voltage) {}
-    public default void setHoodVoltage(double voltage) {}
+    // public default void setHoodVoltage(double voltage) {}
     public default void setTurretVoltage(double voltage) {}
 
     /** Set flywheel target velocity in RPM */
@@ -35,5 +35,5 @@ public interface TurretIO {
     public default void setTurretAngle(double angleDegrees) {}
 
     /** Set the hood angle */
-    public default void setHoodAngle(double angleDegrees) {}
+    // public default void setHoodAngle(double angleDegrees) {}
 }

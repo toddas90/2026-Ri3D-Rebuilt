@@ -30,8 +30,8 @@ public class Turret extends SubsystemBase {
         Logger.recordOutput("Shooter/" + name + "/HoodAngleDegrees", inputs.hoodAngleDegrees);
         Logger.recordOutput("Shooter/" + name + "/TurretAppliedVoltage", inputs.turretVoltage);
         Logger.recordOutput("Shooter/" + name + "/TurretCurrent", inputs.turretCurrent);
-        Logger.recordOutput("Shooter/" + name + "/HoodAppliedVoltage", inputs.hoodVoltage);
-        Logger.recordOutput("Shooter/" + name + "/HoodCurrent", inputs.hoodCurrent);
+        // Logger.recordOutput("Shooter/" + name + "/HoodAppliedVoltage", inputs.hoodVoltage);
+        // Logger.recordOutput("Shooter/" + name + "/HoodCurrent", inputs.hoodCurrent);
         
         // Log additional data
         Logger.recordOutput("Shooter/" + name + "/FlywheelVelocityRPM", inputs.flywheelVelocityRPM);
@@ -72,19 +72,19 @@ public class Turret extends SubsystemBase {
      * Set the hood to a specific angle
      * @param angleDegrees Target angle in degrees
      */
-    public void setHoodAngle(double angleDegrees) {
-        double clampedAngle = MathUtil.clamp(angleDegrees, 
-            ShooterConstants.kHoodMinAngle, ShooterConstants.kHoodMaxAngle);
-        io.setHoodAngle(clampedAngle);
-    }
+    // public void setHoodAngle(double angleDegrees) {
+    //     double clampedAngle = MathUtil.clamp(angleDegrees, 
+    //         ShooterConstants.kHoodMinAngle, ShooterConstants.kHoodMaxAngle);
+    //     io.setHoodAngle(clampedAngle);
+    // }
     
     /**
      * Set hood voltage directly (for manual control)
      * @param voltage Voltage to apply (-12 to 12)
      */
-    public void setHoodVoltage(double voltage) {
-        io.setHoodVoltage(voltage);
-    }
+    // public void setHoodVoltage(double voltage) {
+    //     io.setHoodVoltage(voltage);
+    // }
     
     /**
      * Get the current hood angle
@@ -165,7 +165,7 @@ public class Turret extends SubsystemBase {
      */
     public void aim(double turretAngleDegrees, double hoodAngleDegrees) {
         setTurretAngle(turretAngleDegrees);
-        setHoodAngle(hoodAngleDegrees);
+        // setHoodAngle(hoodAngleDegrees);
     }
     
     /**

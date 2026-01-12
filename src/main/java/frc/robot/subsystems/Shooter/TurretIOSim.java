@@ -101,8 +101,8 @@ public class TurretIOSim implements TurretIO {
         inputs.turretAngleDegrees = getTurretAngleDegrees();
         
         // Set hood (servo) inputs - servos don't have voltage/current in the same way
-        inputs.hoodVoltage = 0.0; // Servos don't report voltage
-        inputs.hoodCurrent = 0.0; // Servos don't report current
+        // inputs.hoodVoltage = 0.0; // Servos don't report voltage
+        // inputs.hoodCurrent = 0.0; // Servos don't report current
         inputs.hoodAngleDegrees = hoodCurrentAngleDegrees;
         
         // Set flywheel inputs
@@ -145,11 +145,11 @@ public class TurretIOSim implements TurretIO {
         turretMotor.setInputVoltage(turretAppliedVolts);
     }
 
-    @Override
-    public void setHoodVoltage(double voltage) {
-        // Servos don't use voltage control - this is a no-op
-        // Use setHoodAngle() instead
-    }
+    // @Override
+    // public void setHoodVoltage(double voltage) {
+    //     // Servos don't use voltage control - this is a no-op
+    //     // Use setHoodAngle() instead
+    // }
 
     @Override
     public void setFlywheelVoltage(double voltage) {
@@ -171,13 +171,13 @@ public class TurretIOSim implements TurretIO {
         turretSetpointDegrees = angleDegrees;
     }
 
-    @Override
-    public void setHoodAngle(double angleDegrees) {
-        // Set servo target position (clamped to valid range)
-        hoodTargetAngleDegrees = MathUtil.clamp(angleDegrees, 
-            ShooterConstants.kHoodMinAngle, 
-            ShooterConstants.kHoodMaxAngle);
-    }
+    // @Override
+    // public void setHoodAngle(double angleDegrees) {
+    //     // Set servo target position (clamped to valid range)
+    //     hoodTargetAngleDegrees = MathUtil.clamp(angleDegrees, 
+    //         ShooterConstants.kHoodMinAngle, 
+    //         ShooterConstants.kHoodMaxAngle);
+    // }
 
     @Override
     public void stop() {
