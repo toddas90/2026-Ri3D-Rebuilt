@@ -11,7 +11,7 @@
 ## Software Architecture
 Following AdvantageKit IO pattern:
 - `IntakeIO` interface with AutoLog inputs
-- `IntakeIOSparkMax` for real hardware
+- `IntakeIOSparkMax` for real hardware (might be talon, victor, etc)
 - `IntakeIOSim` for simulation
 - `Intake` subsystem class
 
@@ -67,6 +67,3 @@ public static class IntakeConstants {
 - `IntakeGamePieceCommand` - Deploy + run rollers until current spike
 - `EjectGamePieceCommand` - Run rollers in reverse
 - `ManualIntakeControlCommand` - For testing/override
-
-## Integration Points
-- Coordinate with turret if shooting backwards

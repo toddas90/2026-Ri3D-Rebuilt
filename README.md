@@ -39,3 +39,20 @@ The NavX and Photonvision are currently using 2025 or previous libs because they
 Rio needs to be updated once it has power and is able.
 
 Vision improvements and Auto pathing can be completely done right now while we don't have a robot to work with. Once mechanisms are better defined we can write those.
+
+### Andrew Notes (end of night 2):
+Got physics calculations for shooter working (seems like). Constant auto-lock on the hub unless otherwise told.
+Hood angle, turret angle, and flywheel velocity all calculated as needed. Hopefully takes motion into account.
+
+Very tired implementation of climb code. Probably doesn't work. Skeleton of Intake code created.
+
+TODO:
+1. Intake subsystem (create)
+2. Climb subsystem (sim testing and tuning)
+3. Shooter subsystem (real testing and tuning)
+4. Drive subsystem (real testing and tuning)
+5. Vision subsystem (Photonvision setup, real testing and tuning)
+6. Check library versions (in vendordeps) and update devices as needed.
+7. Clean up scattered constants
+8. 
+

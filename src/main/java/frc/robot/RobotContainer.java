@@ -10,6 +10,10 @@ import frc.robot.commands.AimAtTargetCommand;
 import frc.robot.commands.FieldOrientedDriveCommand;
 import frc.robot.commands.ManualShootCommand;
 import frc.robot.commands.ManualTurretAimCommand;
+import frc.robot.subsystems.Climb.Climb;
+import frc.robot.subsystems.Climb.ClimbIO;
+import frc.robot.subsystems.Climb.ClimbIOSim;
+import frc.robot.subsystems.Climb.ClimbIOSparkMax;
 import frc.robot.subsystems.Drive.Drive;
 import frc.robot.subsystems.Drive.DriveIO;
 import frc.robot.subsystems.Drive.DriveIOSim;
@@ -48,6 +52,7 @@ public class RobotContainer {
   private final Turret m_leftTurret;
   private final Turret m_rightTurret;
   private final Indexer m_indexer;
+  private final Climb m_climb;
 
   // Controllers
   private final CommandXboxController m_driverController =
@@ -76,6 +81,7 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIOSparkMax());
         m_leftTurret = new Turret(new TurretIOSparkMax(), "LeftTurret");
         m_rightTurret = new Turret(new TurretIOSparkMax(), "RightTurret");
+        m_climb = new Climb(new ClimbIOSparkMax());
         break;
 
       case SIM:
@@ -94,6 +100,7 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIOSim());
         m_leftTurret = new Turret(new TurretIOSim(), "LeftTurret");
         m_rightTurret = new Turret(new TurretIOSim(), "RightTurret");
+        m_climb = new Climb(new ClimbIOSim());
         break;
 
       default:
@@ -102,8 +109,9 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIO() {});
         m_leftTurret = new Turret(new TurretIO() {}, "LeftTurret");
         m_rightTurret = new Turret(new TurretIO() {}, "RightTurret");
+        m_climb = new Climb(new ClimbIO() {});
     }
-
+    
     // Configure the trigger bindings
     configureBindings();
     
@@ -168,6 +176,40 @@ public class RobotContainer {
     // A Button: Manual shoot (spin up flywheels and run indexer)
     m_driverController.a().whileTrue( // operator
         new ManualShootCommand(m_leftTurret, m_rightTurret, m_indexer)
+    );
+    
+    // ==================== LIFT CONTROLS ====================
+    
+    // D-Pad Up: Move lift to TOP position
+    m_operatorController.povUp().onTrue(
+        Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.EXTENDED), m_climb)
+    );
+    
+    // D-Pad Center: Move lift to MIDDLE position for bar insertion
+    m_operatorController.povCenter().onTrue(
+        Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.BAR_INSERT), m_climb)
+    );
+    
+    // D-Pad Down: Move lift to BOTTOM position
+    m_operatorController.povDown().onTrue(
+        Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.STOWED), m_climb)
+    );
+    
+    // B Button: Flip robot (toggle between NORMAL and FLIPPED)
+    m_operatorController.b().onTrue(
+        Commands.either(
+            Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.NORMAL), m_climb),
+            Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.FLIPPED), m_climb),
+            () -> m_climb.getPivotAngle() > 90.0 // If past 90°, go to NORMAL, else go to FLIPPED
+        )
+    );
+    
+    // Back button: Emergency stop for climb
+    m_operatorController.back().onTrue(
+        Commands.runOnce(() -> {
+            m_climb.stop();
+            m_climb.setBrakeMode(true);
+        }, m_climb)
     );
   }
 

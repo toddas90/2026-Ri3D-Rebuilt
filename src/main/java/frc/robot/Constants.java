@@ -134,4 +134,54 @@ public final class Constants {
     public static final double kMaxSpeedMetersPerSecond = 3.0;
     public static final double kMaxAngularSpeedRadiansPerSecond = 2 * Math.PI;
   }
+
+  public static class ClimbConstants {
+    // Motor CAN IDs
+    public static final int kLiftMotorId = 30;
+    public static final int kPivotMotorId = 31;
+    
+    // Gear ratios
+    public static final double kLiftGearRatio = 25.0; // 25:1 reduction
+    public static final double kPivotGearRatio = 100.0; // High reduction for pivot
+    
+    // Physical dimensions
+    public static final double kLiftDrumRadius = 0.0254; // 2" diameter sprocket = 1" radius in meters
+    public static final double kLiftMetersPerRotation = 2 * Math.PI * kLiftDrumRadius / kLiftGearRatio;
+    public static final double kPivotDegreesPerRotation = 360.0 / kPivotGearRatio;
+    
+    // Position limits
+    public static final double kLiftMinHeight = 0.0; // meters
+    public static final double kLiftMaxHeight = 0.5; // meters (adjust based on actual)
+    public static final double kLiftBarInsertHeight = 0.4; // meters (TBD)
+    
+    public static final double kPivotMinAngle = 0.0; // degrees
+    public static final double kPivotMaxAngle = 180.0; // degrees (full flip)
+    
+    // PID Constants - Lift
+    public static final double kLiftP = 5.0;
+    public static final double kLiftI = 0.0;
+    public static final double kLiftD = 0.1;
+    public static final double kLiftFF = 0.0;
+    
+    // PID Constants - Pivot (will need careful tuning due to balance)
+    public static final double kPivotP = 0.02;
+    public static final double kPivotI = 0.0;
+    public static final double kPivotD = 0.001;
+    public static final double kPivotFF = 0.0;
+    
+    // Current limits
+    public static final int kLiftCurrentLimit = 40; // amps
+    public static final int kPivotCurrentLimit = 40; // amps
+    
+    // Digital IO ports for limit switches
+    public static final int kLiftBottomLimitPort = 0;
+    public static final int kLiftTopLimitPort = 1;
+    
+    // Tolerances
+    public static final double kLiftPositionTolerance = 0.02; // meters
+    public static final double kPivotPositionTolerance = 2.0; // degrees
+    
+    // Safety
+    public static final double kMaxMotorTemp = 70.0; // Celsius
+  }
 }

@@ -40,14 +40,18 @@ public class AimingCalculator {
         14.0 * 0.0254   // 0.3556m up (Z)
     );
     
+    // TODO: Turret blind spot code doesn't seem to work correctly
+
     // Turret FOV limits (in degrees, 0° = robot forward)
-    // Left turret: can aim from -45° (slightly right) to 240° (back-left)
-    private static final double LEFT_TURRET_MIN = -45.0;
-    private static final double LEFT_TURRET_MAX = 240.0;
+    // Left turret: can aim anywhere except directly right (90° ± 15°)
+    // This means it CANNOT aim from 75° to 105°
+    private static final double LEFT_TURRET_DEADZONE_MIN = 75.0;
+    private static final double LEFT_TURRET_DEADZONE_MAX = 105.0;
     
-    // Right turret: can aim from 45° (slightly left) to -240° (back-right)  
-    private static final double RIGHT_TURRET_MIN = -240.0;
-    private static final double RIGHT_TURRET_MAX = 45.0;
+    // Right turret: can aim anywhere except directly left (-90° ± 15°)  
+    // This means it CANNOT aim from -75° to -105°
+    private static final double RIGHT_TURRET_DEADZONE_MIN = -105.0;
+    private static final double RIGHT_TURRET_DEADZONE_MAX = -75.0;
     
     /**
      * Calculate complete aiming solution for moving robot
@@ -102,13 +106,13 @@ public class AimingCalculator {
         
         // Log results
         String side = isLeftTurret ? "Left" : "Right";
-        Logger.recordOutput("Aiming/" + side + "/Distance", horizontalDistance);
-        Logger.recordOutput("Aiming/" + side + "/HoodAngle", trajectory.hoodAngle);
-        Logger.recordOutput("Aiming/" + side + "/LaunchVelocity", trajectory.launchVelocity);
-        Logger.recordOutput("Aiming/" + side + "/FlightTime", trajectory.flightTime);
-        Logger.recordOutput("Aiming/" + side + "/TurretAngle", turretAngle);
-        Logger.recordOutput("Aiming/" + side + "/FlywheelRPM", flywheelRPM);
-        Logger.recordOutput("Aiming/" + side + "/CanReach", canReach);
+        Logger.recordOutput("Aiming/" + side + "/Distance_m", horizontalDistance); // Unit: meters
+        Logger.recordOutput("Aiming/" + side + "/HoodAngle", trajectory.hoodAngle); // Unit: degrees
+        Logger.recordOutput("Aiming/" + side + "/LaunchVelocity_ms", trajectory.launchVelocity); // Unit: m/s
+        Logger.recordOutput("Aiming/" + side + "/FlightTime", trajectory.flightTime); // Unit: s
+        Logger.recordOutput("Aiming/" + side + "/TurretAngle", turretAngle); // Unit: degrees
+        Logger.recordOutput("Aiming/" + side + "/Flywheel_RPM", flywheelRPM); // Unit: RPM
+        Logger.recordOutput("Aiming/" + side + "/CanReach", canReach); 
         Logger.recordOutput("Aiming/" + side + "/ValidSolutionFound", trajectory.isValidSolution);
         
         return new AimingParameters(
@@ -264,16 +268,19 @@ public class AimingCalculator {
      * Check if turret can reach the calculated angle
      */
     private static boolean isAngleReachable(double angle, boolean isLeftTurret) {
+        // Normalize angle to [-180, 180]
+        double normalizedAngle = angle;
+        while (normalizedAngle > 180) normalizedAngle -= 360;
+        while (normalizedAngle < -180) normalizedAngle += 360;
+        
         if (isLeftTurret) {
-            // Handle wraparound for left turret (-240 to 45)
-            if (angle >= LEFT_TURRET_MIN && angle <= LEFT_TURRET_MAX) return true;
-            if (angle >= LEFT_TURRET_MIN + 360) return true;
-            return false;
+            // Left turret cannot aim between 75° and 105° (directly right)
+            return normalizedAngle < LEFT_TURRET_DEADZONE_MIN || 
+                   normalizedAngle > LEFT_TURRET_DEADZONE_MAX;
         } else {
-            // Handle wraparound for right turret (-45 to 240)
-            if (angle >= RIGHT_TURRET_MIN && angle <= RIGHT_TURRET_MAX) return true;
-            if (angle <= RIGHT_TURRET_MAX - 360) return true;
-            return false;
+            // Right turret cannot aim between -105° and -75° (directly left)
+            return normalizedAngle < RIGHT_TURRET_DEADZONE_MIN || 
+                   normalizedAngle > RIGHT_TURRET_DEADZONE_MAX;
         }
     }
     
@@ -281,24 +288,29 @@ public class AimingCalculator {
      * Clamp turret angle to valid range
      */
     private static double clampTurretAngle(double angle, boolean isLeftTurret) {
+        // Normalize angle to [-180, 180]
+        double normalizedAngle = angle;
+        while (normalizedAngle > 180) normalizedAngle -= 360;
+        while (normalizedAngle < -180) normalizedAngle += 360;
+        
         if (isLeftTurret) {
-            // Find closest valid angle
-            if (angle > LEFT_TURRET_MAX && angle < LEFT_TURRET_MIN + 360) {
-                // In the dead zone, choose closest edge
-                double distToMax = Math.abs(angle - LEFT_TURRET_MAX);
-                double distToMin = Math.abs(angle - (LEFT_TURRET_MIN + 360));
-                return distToMax < distToMin ? LEFT_TURRET_MAX : LEFT_TURRET_MIN;
+            // If in dead zone (75° to 105°), move to closest edge
+            if (normalizedAngle >= LEFT_TURRET_DEADZONE_MIN && 
+                normalizedAngle <= LEFT_TURRET_DEADZONE_MAX) {
+                double distToMin = Math.abs(normalizedAngle - LEFT_TURRET_DEADZONE_MIN);
+                double distToMax = Math.abs(normalizedAngle - LEFT_TURRET_DEADZONE_MAX);
+                return distToMin < distToMax ? LEFT_TURRET_DEADZONE_MIN - 0.1 : LEFT_TURRET_DEADZONE_MAX + 0.1;
             }
         } else {
-            // Find closest valid angle for right turret
-            if (angle < RIGHT_TURRET_MIN || angle > RIGHT_TURRET_MAX) {
-                // In the dead zone, choose closest edge
-                double distToMin = Math.abs(angle - RIGHT_TURRET_MIN);
-                double distToMax = Math.abs(angle - RIGHT_TURRET_MAX);
-                return distToMin < distToMax ? RIGHT_TURRET_MIN : RIGHT_TURRET_MAX;
+            // If in dead zone (-105° to -75°), move to closest edge
+            if (normalizedAngle >= RIGHT_TURRET_DEADZONE_MIN && 
+                normalizedAngle <= RIGHT_TURRET_DEADZONE_MAX) {
+                double distToMin = Math.abs(normalizedAngle - RIGHT_TURRET_DEADZONE_MIN);
+                double distToMax = Math.abs(normalizedAngle - RIGHT_TURRET_DEADZONE_MAX);
+                return distToMin < distToMax ? RIGHT_TURRET_DEADZONE_MIN - 0.1 : RIGHT_TURRET_DEADZONE_MAX + 0.1;
             }
         }
-        return angle;
+        return normalizedAngle;
     }
     
     /**

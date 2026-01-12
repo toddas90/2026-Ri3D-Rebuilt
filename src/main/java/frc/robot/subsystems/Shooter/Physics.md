@@ -20,8 +20,8 @@ The AimingCalculator implements a projectile motion solver for a dual-turret sho
 - **Right Turret**: (0.2032m forward, -0.3556m right, 0.3556m up)
 
 ### Field of View Constraints
-- **Left Turret**: -45° to 240° (covers left side and rear)
-- **Right Turret**: -240° to 45° (covers right side and rear)
+- **Left Turret**: Can aim anywhere except 75° to 105° (cannot aim directly right)
+- **Right Turret**: Can aim anywhere except -105° to -75° (cannot aim directly left)
 
 ## Core Physics Equations
 
