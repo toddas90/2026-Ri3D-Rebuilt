@@ -102,8 +102,9 @@ public final class Constants {
     public static final int kFlywheelCurrentLimit = 40; // Amps
     
     // Mechanical ratios
-    public static final double kTurretDegreesPerRotation = 360.0 / 50.0; // 50:1 gear ratio
-    public static final double kHoodDegreesPerRotation = 360.0 / 25.0;   // 25:1 gear ratio
+    public static final double kTurretDegreesPerRotation = 360.0 / 50.0; // 50:1 gear ratio TODO: Verify
+    public static final double kHoodDegreesPerRotation = 360.0 / 25.0;   // 25:1 gear ratio TODO: Verify
+    public static final double kFlywheelGearRatio = 3.0; // 3:1 gear ratio
     
     // Position limits (degrees)
     public static final double kTurretMinAngle = -180.0;
@@ -135,7 +136,7 @@ public final class Constants {
     // Physical Constants
     public static final double kGravity = 9.81; // m/s^2
     public static final double kFlywheelRadius = 1.5 * 0.0254; // 1.5" radius in meters
-    public static final double kMaxFlywheelRPM = 5600.0;
+    public static final double kMaxFlywheelRPM = 10000.0; // Neo 550
     public static final double kLaunchEfficiency = 0.80; // Energy transfer efficiency
     
     // Hood angle limits for trajectory

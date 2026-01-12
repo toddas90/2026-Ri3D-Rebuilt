@@ -75,14 +75,19 @@ public class AimingCalculator {
         double flywheelRPM = velocityToRPM(trajectory.launchVelocity);
         flywheelRPM = Math.min(flywheelRPM, ShooterConstants.kMaxFlywheelRPM);
         
+        // Calculate actual flywheel RPM for logging
+        double actualFlywheelRPM = flywheelRPM / ShooterConstants.kFlywheelGearRatio;
+        
         // Log results
         String side = isLeftTurret ? "Left" : "Right";
         Logger.recordOutput("Aiming/" + side + "/Distance_m", horizontalDistance); // Unit: meters
         Logger.recordOutput("Aiming/" + side + "/IdealHoodAngle", trajectory.hoodAngle); // Unit: degrees
-        Logger.recordOutput("Aiming/" + side + "/LaunchVelocity_ms", trajectory.launchVelocity); // Unit: m/s
+        // Logger.recordOutput("Aiming/" + side + "/LaunchVelocity_ms", trajectory.launchVelocity); // Unit: m/s
+        Logger.recordOutput("Aiming/" + side + "/LaunchVelocity_fts", trajectory.launchVelocity * 3.28084); // Unit: ft/s
         Logger.recordOutput("Aiming/" + side + "/FlightTime", trajectory.flightTime); // Unit: s
         Logger.recordOutput("Aiming/" + side + "/IdealTurretAngle", turretAngle); // Unit: degrees
-        Logger.recordOutput("Aiming/" + side + "/IdealFlywheel_RPM", flywheelRPM); // Unit: RPM
+        Logger.recordOutput("Aiming/" + side + "/IdealMotor_RPM", flywheelRPM); // Unit: RPM (motor speed)
+        Logger.recordOutput("Aiming/" + side + "/IdealFlywheel_RPM", actualFlywheelRPM); // Unit: RPM (actual flywheel speed)
         Logger.recordOutput("Aiming/" + side + "/CanReach", canReach); 
         Logger.recordOutput("Aiming/" + side + "/ValidSolutionFound", trajectory.isValidSolution);
         
@@ -289,14 +294,18 @@ public class AimingCalculator {
      */
     private static double velocityToRPM(double velocity) {
         double angularVelocity = velocity / ShooterConstants.kFlywheelRadius;
-        return angularVelocity * 60.0 / (2 * Math.PI);
+        double flywheelRPM = angularVelocity * 60.0 / (2 * Math.PI);
+        // Account for gear ratio - motor spins faster than flywheel
+        return flywheelRPM * ShooterConstants.kFlywheelGearRatio;
     }
     
     /**
      * Convert RPM to exit velocity
      */
     private static double rpmToVelocity(double rpm) {
-        double angularVelocity = rpm * 2 * Math.PI / 60.0;
+        // Account for gear ratio - motor RPM to flywheel RPM
+        double flywheelRPM = rpm / ShooterConstants.kFlywheelGearRatio;
+        double angularVelocity = flywheelRPM * 2 * Math.PI / 60.0;
         return angularVelocity * ShooterConstants.kFlywheelRadius;
     }
     
