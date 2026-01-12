@@ -34,6 +34,7 @@ import frc.robot.subsystems.Shooter.IndexerIOSim;
 import frc.robot.subsystems.Shooter.IndexerIOSparkMax;
 import frc.robot.subsystems.Shooter.TurretIOSparkMax;
 import frc.robot.subsystems.Shooter.AimingCalculator;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -126,94 +127,125 @@ public class RobotContainer {
 
     // ==================== SHOOTING CONTROLS ====================
     
-    // TODO: Dumb??
-    // Right Trigger: Aim towards own driver station (shoot back)
-    // m_driverController.rightTrigger(0.5).whileTrue( // operator
-    //     new AimAtTargetCommand(
-    //         m_leftTurret,
-    //         m_rightTurret,
-    //         m_drive::getPose,
-    //         AimingCalculator::getDriverStationPosition,
-    //         m_drive::getChassisSpeeds,
-    //         "DriverStation",
-    //         MAX_SHOOT_BACK_RPM // Limit RPM for gentler shot
-    //     )
-    // );
-    
-    // TODO: Sleepy speaking? But likely redundant, just use manual shoot since it auto locks to hub
-    m_driverController.leftTrigger(0.5).whileTrue( // operator
-        new AimAtTargetCommand(
-            m_leftTurret,
-            m_rightTurret,
-            m_drive::getPose,
-            AimingCalculator::getTargetTowerPosition,
-            m_drive::getChassisSpeeds,
-            "Hub"
+    // A Button held: Fire at hub with auto-aim (spin up and shoot)
+    m_operatorController.a().whileTrue(
+        Commands.parallel(
+            new AimAtTargetCommand(
+                m_leftTurret,
+                m_rightTurret,
+                m_drive::getPose,
+                AimingCalculator::getTargetTowerPosition,
+                m_drive::getChassisSpeeds,
+                "HubShoot",
+                ShooterConstants.kMaxFlywheelRPM  // Spin up flywheels
+            ),
+            Commands.startEnd(
+                () -> m_indexer.start(),
+                () -> m_indexer.stop(),
+                m_indexer
+            )
         )
     );
 
-    // TODO: Fix jank
-    // Manual Turret Aiming - Left Bumper held + Left Stick controls left turret
-    m_driverController.leftBumper().whileTrue( // operator
-        new ManualTurretAimCommand(
-            m_leftTurret,
-            () -> m_operatorController.getLeftX(),
-            () -> -m_operatorController.getLeftY(), // Inverted Y
-            0.5 // Deadband
+    // Manual control with left stick - fixed hood at 45°, max velocity, WITH INDEXER
+    Command leftManualControl = Commands.parallel(
+        Commands.run(() -> {
+            double x = m_operatorController.getLeftX();
+            double y = -m_operatorController.getLeftY();
+            double magnitude = Math.sqrt(x * x + y * y);
+            
+            if (magnitude > 0.5) {  // Deadband
+                double angle = Math.toDegrees(Math.atan2(y, x));
+                m_leftTurret.prepareShotVelocity(
+                    angle,
+                    45.0,  // Fixed 45° hood angle
+                    ShooterConstants.kMaxFlywheelRPM
+                );
+            } else {
+                // Stop when stick released
+                m_leftTurret.stopFlywheel();
+            }
+        }, m_leftTurret),
+        Commands.startEnd(
+            () -> m_indexer.start(),
+            () -> m_indexer.stop(),
+            m_indexer
         )
-    );
-
-    // TODO: Fix jank
-    // Manual Turret Aiming - Right Bumper held + Right Stick controls right turret
-    m_driverController.rightBumper().whileTrue( // operator
-        new ManualTurretAimCommand(
-            m_rightTurret,
-            () -> m_operatorController.getRightX(),
-            () -> -m_operatorController.getRightY(), // Inverted Y
-            0.5 // Deadband
-        )
-    );
+    ).withName("LeftManualAim");
     
-    // TODO: Ideally remove. Hard to hold bumpers and move sticks AND press a.
-    // A Button: Manual shoot (spin up flywheels and run indexer)
-    m_driverController.a().whileTrue( // operator
-        new ManualShootCommand(m_leftTurret, m_rightTurret, m_indexer)
-    );
+    // Right stick manual control - fixed hood at 45°, max velocity, WITH INDEXER
+    Command rightManualControl = Commands.parallel(
+        Commands.run(() -> {
+            double x = m_operatorController.getRightX();
+            double y = -m_operatorController.getRightY();
+            double magnitude = Math.sqrt(x * x + y * y);
+            
+            if (magnitude > 0.5) {  // Deadband
+                double angle = Math.toDegrees(Math.atan2(y, x));
+                m_rightTurret.prepareShotVelocity(
+                    angle,
+                    45.0,  // Fixed 45° hood angle
+                    ShooterConstants.kMaxFlywheelRPM
+                );
+            } else {
+                // Stop when stick released
+                m_rightTurret.stopFlywheel();
+            }
+        }, m_rightTurret),
+        Commands.startEnd(
+            () -> m_indexer.start(),
+            () -> m_indexer.stop(),
+            m_indexer
+        )
+    ).withName("RightManualAim");
+    
+    // Bind manual controls - these will interrupt the default command when active
+    m_operatorController.axisGreaterThan(XboxController.Axis.kLeftX.value, 0.5)
+        .or(m_operatorController.axisLessThan(XboxController.Axis.kLeftX.value, -0.5))
+        .or(m_operatorController.axisGreaterThan(XboxController.Axis.kLeftY.value, 0.5))
+        .or(m_operatorController.axisLessThan(XboxController.Axis.kLeftY.value, -0.5))
+        .whileTrue(leftManualControl);
+        
+    m_operatorController.axisGreaterThan(XboxController.Axis.kRightX.value, 0.5)
+        .or(m_operatorController.axisLessThan(XboxController.Axis.kRightX.value, -0.5))
+        .or(m_operatorController.axisGreaterThan(XboxController.Axis.kRightY.value, 0.5))
+        .or(m_operatorController.axisLessThan(XboxController.Axis.kRightY.value, -0.5))
+        .whileTrue(rightManualControl);
     
     // ==================== LIFT CONTROLS ====================
     
     // D-Pad Up: Move lift to TOP position
-    m_driverController.povUp().onTrue( // Operator
+    m_operatorController.povUp().onTrue(
         Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.EXTENDED), m_climb)
     );
     
-    // D-Pad Center: Move lift to MIDDLE position for bar insertion
-    m_driverController.povRight().onTrue( // Operator
+    // D-Pad Right: Move lift to MIDDLE position for bar insertion
+    m_operatorController.povRight().onTrue(
         Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.BAR_INSERT), m_climb)
     );
     
     // D-Pad Down: Move lift to BOTTOM position
-    m_driverController.povDown().onTrue( // Operator
+    m_operatorController.povDown().onTrue(
         Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.STOWED), m_climb)
     );
     
     // B Button: Flip robot (toggle between NORMAL and FLIPPED)
-    m_driverController.b().onTrue( // Operator
+    m_operatorController.b().onTrue(
         Commands.either(
             Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.NORMAL), m_climb),
             Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.FLIPPED), m_climb),
-            () -> m_climb.getPivotAngle() > 90.0 // If past 90°, go to NORMAL, else go to FLIPPED
+            () -> m_climb.getPivotAngle() > 90.0
         )
     );
     
     // Back button: Emergency stop for climb
-    m_driverController.back().onTrue(
+    m_operatorController.back().onTrue(
         Commands.runOnce(() -> {
             m_climb.stop();
             m_climb.setBrakeMode(true);
         }, m_climb)
     );
-  }
+}
 
   private void configureDefaultCommands() {
     // Set default command for drive to field-oriented control

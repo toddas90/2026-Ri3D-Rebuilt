@@ -12,43 +12,6 @@ import org.littletonrobotics.junction.Logger;
 
 public class AimingCalculator {
     
-    // Physical Constants
-    private static final double GRAVITY = 9.81; // m/s^2
-    private static final double FLYWHEEL_RADIUS = 1.5 * 0.0254; // 1.5" radius in meters
-    private static final double MAX_FLYWHEEL_RPM = 5600.0;
-    private static final double LAUNCH_EFFICIENCY = 0.80; // Energy transfer efficiency
-    
-    // Hood angle limits
-    private static final double MIN_HOOD_ANGLE = 45.0; // degrees - distance shot
-    private static final double MAX_HOOD_ANGLE = 75.0; // degrees - upward shot
-    
-    // Target height (hub is 72" tall, opening on top)
-    private static final double TARGET_HEIGHT = 72.0 * 0.0254; // 1.8288m
-    
-    // Turret mounting positions (from robot center)
-    // Right turret: +14" forward (X), -8" right (Y), +14" up (Z)
-    private static final Translation3d RIGHT_TURRET_POSITION = new Translation3d(
-        8.0 * 0.0254,  // 0.3556m forward (X)
-        -14.0 * 0.0254,  // 0.2032m right (-Y)
-        14.0 * 0.0254   // 0.3556m up (Z)
-    );
-    
-    // Left turret: +14" forward (X), +8" left (Y), +14" up (Z)
-    private static final Translation3d LEFT_TURRET_POSITION = new Translation3d(
-        8.0 * 0.0254,  // 0.3556m forward (X)
-        14.0 * 0.0254,   // 0.2032m left (+Y)
-        14.0 * 0.0254   // 0.3556m up (Z)
-    );
-
-    // Turret FOV limits (in degrees, 0° = robot forward, positive CCW)
-    // Left turret: can aim anywhere except directly right (-90° ± 22.5°)
-    private static final double LEFT_TURRET_DEADZONE_MIN = -112.5;  // -90° - 22.5°
-    private static final double LEFT_TURRET_DEADZONE_MAX = -67.5;   // -90° + 22.5°
-    
-    // Right turret: can aim anywhere except directly left (90° ± 22.5°)  
-    private static final double RIGHT_TURRET_DEADZONE_MIN = 67.5;   // 90° - 22.5°
-    private static final double RIGHT_TURRET_DEADZONE_MAX = 112.5;  // 90° + 22.5°
-    
     /**
      * Calculate complete aiming solution for moving robot
      */
@@ -59,7 +22,9 @@ public class AimingCalculator {
             boolean isLeftTurret) {
         
         // Get turret position in 3D space
-        Translation3d turretPos3d = isLeftTurret ? LEFT_TURRET_POSITION : RIGHT_TURRET_POSITION;
+        Translation3d turretPos3d = isLeftTurret ? 
+            ShooterConstants.kLeftTurretPosition : 
+            ShooterConstants.kRightTurretPosition;
         
         // Convert to 2D field position
         Translation2d turretOffset2d = new Translation2d(turretPos3d.getX(), turretPos3d.getY());
@@ -68,14 +33,14 @@ public class AimingCalculator {
         
         // Calculate initial distance to target
         double horizontalDistance = turretFieldPos.getDistance(targetPosition);
-        double verticalDistance = TARGET_HEIGHT - turretPos3d.getZ();
+        double verticalDistance = ShooterConstants.HUB_HEIGHT - turretPos3d.getZ();
         
         // Find optimal trajectory (iterative approach for moving target)
         TrajectoryResult trajectory = findOptimalTrajectory(
             turretFieldPos, 
             targetPosition,
             turretPos3d.getZ(),
-            TARGET_HEIGHT,
+            ShooterConstants.HUB_HEIGHT,
             robotPose,
             robotVelocity
         );
@@ -108,17 +73,16 @@ public class AimingCalculator {
         
         // Convert exit velocity to flywheel RPM
         double flywheelRPM = velocityToRPM(trajectory.launchVelocity);
-        flywheelRPM = Math.min(flywheelRPM, MAX_FLYWHEEL_RPM);
+        flywheelRPM = Math.min(flywheelRPM, ShooterConstants.kMaxFlywheelRPM);
         
         // Log results
         String side = isLeftTurret ? "Left" : "Right";
         Logger.recordOutput("Aiming/" + side + "/Distance_m", horizontalDistance); // Unit: meters
-        Logger.recordOutput("Aiming/" + side + "/HoodAngle", trajectory.hoodAngle); // Unit: degrees
+        Logger.recordOutput("Aiming/" + side + "/IdealHoodAngle", trajectory.hoodAngle); // Unit: degrees
         Logger.recordOutput("Aiming/" + side + "/LaunchVelocity_ms", trajectory.launchVelocity); // Unit: m/s
         Logger.recordOutput("Aiming/" + side + "/FlightTime", trajectory.flightTime); // Unit: s
-        Logger.recordOutput("Aiming/" + side + "/TurretAngle", turretAngle); // Unit: degrees
-        Logger.recordOutput("Aiming/" + side + "/CurrentAngle", currentRobotRelativeAngle); // Unit: degrees
-        Logger.recordOutput("Aiming/" + side + "/Flywheel_RPM", flywheelRPM); // Unit: RPM
+        Logger.recordOutput("Aiming/" + side + "/IdealTurretAngle", turretAngle); // Unit: degrees
+        Logger.recordOutput("Aiming/" + side + "/IdealFlywheel_RPM", flywheelRPM); // Unit: RPM
         Logger.recordOutput("Aiming/" + side + "/CanReach", canReach); 
         Logger.recordOutput("Aiming/" + side + "/ValidSolutionFound", trajectory.isValidSolution);
         
@@ -154,13 +118,13 @@ public class AimingCalculator {
                            robotVelocity.vyMetersPerSecond * Math.sin(shootAngle);
         
         // Try different hood angles to find optimal solution
-        double bestHoodAngle = MIN_HOOD_ANGLE;
+        double bestHoodAngle = ShooterConstants.kMinHoodAngle;
         double bestVelocity = Double.MAX_VALUE;
         double bestFlightTime = 0;
         boolean foundValidSolution = false;
         int validSolutionCount = 0;
         
-        for (double hoodAngle = MIN_HOOD_ANGLE; hoodAngle <= MAX_HOOD_ANGLE; hoodAngle += 1.0) {
+        for (double hoodAngle = ShooterConstants.kMinHoodAngle; hoodAngle <= ShooterConstants.kMaxHoodAngle; hoodAngle += 1.0) {
             double angleRad = Math.toRadians(hoodAngle);
             
             // Solve projectile motion equation for initial velocity
@@ -171,7 +135,7 @@ public class AimingCalculator {
             double denominator = 2 * cosAngle * cosAngle * (distance * tanAngle - heightDiff);
             if (denominator <= 0) continue;
             
-            double velocitySquared = (GRAVITY * distance * distance) / denominator;
+            double velocitySquared = (ShooterConstants.kGravity * distance * distance) / denominator;
             if (velocitySquared < 0) continue;
             
             double requiredVelocity = Math.sqrt(velocitySquared);
@@ -181,8 +145,8 @@ public class AimingCalculator {
             if (launchVelocity < 0) continue;
             
             // Check if achievable
-            double rpm = velocityToRPM(launchVelocity / LAUNCH_EFFICIENCY);
-            if (rpm > MAX_FLYWHEEL_RPM) continue;
+            double rpm = velocityToRPM(launchVelocity / ShooterConstants.kLaunchEfficiency);
+            if (rpm > ShooterConstants.kMaxFlywheelRPM) continue;
             
             // Calculate flight time
             double flightTime = distance / (requiredVelocity * cosAngle);
@@ -201,7 +165,7 @@ public class AimingCalculator {
         
         // Log solution search results
         Logger.recordOutput("Aiming/TrajectorySearch/ValidSolutionsFound", validSolutionCount);
-        Logger.recordOutput("Aiming/TrajectorySearch/SearchedAngles", (int)((MAX_HOOD_ANGLE - MIN_HOOD_ANGLE) / 5.0) + 1);
+        Logger.recordOutput("Aiming/TrajectorySearch/SearchedAngles", (int)((ShooterConstants.kMaxHoodAngle - ShooterConstants.kMinHoodAngle) / 5.0) + 1);
         
         // If no solution found, use fallback
         if (!foundValidSolution) {
@@ -211,22 +175,22 @@ public class AimingCalculator {
             
             // Distance-based interpolation
             if (distance < 2.0) {
-                bestHoodAngle = MIN_HOOD_ANGLE;
+                bestHoodAngle = ShooterConstants.kMinHoodAngle;
             } else if (distance > 5.0) {
-                bestHoodAngle = MAX_HOOD_ANGLE;
+                bestHoodAngle = ShooterConstants.kMaxHoodAngle;
             } else {
                 double t = (distance - 2.0) / 3.0;
-                bestHoodAngle = MIN_HOOD_ANGLE + t * (MAX_HOOD_ANGLE - MIN_HOOD_ANGLE);
+                bestHoodAngle = ShooterConstants.kMinHoodAngle + t * (ShooterConstants.kMaxHoodAngle - ShooterConstants.kMinHoodAngle);
             }
             
             // Use max velocity
-            bestVelocity = rpmToVelocity(MAX_FLYWHEEL_RPM) * LAUNCH_EFFICIENCY;
+            bestVelocity = rpmToVelocity(ShooterConstants.kMaxFlywheelRPM) * ShooterConstants.kLaunchEfficiency;
             bestFlightTime = distance / (bestVelocity * Math.cos(Math.toRadians(bestHoodAngle)));
         }
         
         return new TrajectoryResult(
             bestHoodAngle,
-            bestVelocity / LAUNCH_EFFICIENCY, // Account for efficiency
+            bestVelocity / ShooterConstants.kLaunchEfficiency, // Account for efficiency
             bestFlightTime,
             foundValidSolution
         );
@@ -250,7 +214,7 @@ public class AimingCalculator {
                               robotVelocity.omegaRadiansPerSecond * flightTime;
         
         // Get turret offset and rotate to future orientation
-        Translation3d turret3d = isLeftTurret ? LEFT_TURRET_POSITION : RIGHT_TURRET_POSITION;
+        Translation3d turret3d = isLeftTurret ? ShooterConstants.kLeftTurretPosition : ShooterConstants.kRightTurretPosition;
         Translation2d turretOffset = new Translation2d(turret3d.getX(), turret3d.getY());
         Translation2d futureOffset = turretOffset.rotateBy(new Rotation2d(futureHeading));
         
@@ -282,12 +246,12 @@ public class AimingCalculator {
         
         if (isLeftTurret) {
             // Left turret cannot aim between -112.5° and -67.5° (directly right)
-            return !(normalizedAngle >= LEFT_TURRET_DEADZONE_MIN && 
-                    normalizedAngle <= LEFT_TURRET_DEADZONE_MAX);
+            return !(normalizedAngle >= ShooterConstants.kLeftTurretDeadzoneMin && 
+                    normalizedAngle <= ShooterConstants.kLeftTurretDeadzoneMax);
         } else {
             // Right turret cannot aim between 67.5° and 112.5° (directly left)
-            return !(normalizedAngle >= RIGHT_TURRET_DEADZONE_MIN && 
-                    normalizedAngle <= RIGHT_TURRET_DEADZONE_MAX);
+            return !(normalizedAngle >= ShooterConstants.kRightTurretDeadzoneMin && 
+                    normalizedAngle <= ShooterConstants.kRightTurretDeadzoneMax);
         }
     }
     
@@ -302,19 +266,19 @@ public class AimingCalculator {
         
         if (isLeftTurret) {
             // If in dead zone (-112.5° to -67.5°), move to closest edge
-            if (normalizedAngle >= LEFT_TURRET_DEADZONE_MIN && 
-                normalizedAngle <= LEFT_TURRET_DEADZONE_MAX) {
-                double distToMin = Math.abs(normalizedAngle - LEFT_TURRET_DEADZONE_MIN);
-                double distToMax = Math.abs(normalizedAngle - LEFT_TURRET_DEADZONE_MAX);
-                return distToMin < distToMax ? LEFT_TURRET_DEADZONE_MIN - 0.1 : LEFT_TURRET_DEADZONE_MAX + 0.1;
+            if (normalizedAngle >= ShooterConstants.kLeftTurretDeadzoneMin && 
+                normalizedAngle <= ShooterConstants.kLeftTurretDeadzoneMax) {
+                double distToMin = Math.abs(normalizedAngle - ShooterConstants.kLeftTurretDeadzoneMin);
+                double distToMax = Math.abs(normalizedAngle - ShooterConstants.kLeftTurretDeadzoneMax);
+                return distToMin < distToMax ? ShooterConstants.kLeftTurretDeadzoneMin - 0.1 : ShooterConstants.kLeftTurretDeadzoneMax + 0.1;
             }
         } else {
             // If in dead zone (67.5° to 112.5°), move to closest edge
-            if (normalizedAngle >= RIGHT_TURRET_DEADZONE_MIN && 
-                normalizedAngle <= RIGHT_TURRET_DEADZONE_MAX) {
-                double distToMin = Math.abs(normalizedAngle - RIGHT_TURRET_DEADZONE_MIN);
-                double distToMax = Math.abs(normalizedAngle - RIGHT_TURRET_DEADZONE_MAX);
-                return distToMin < distToMax ? RIGHT_TURRET_DEADZONE_MIN - 0.1 : RIGHT_TURRET_DEADZONE_MAX + 0.1;
+            if (normalizedAngle >= ShooterConstants.kRightTurretDeadzoneMin && 
+                normalizedAngle <= ShooterConstants.kRightTurretDeadzoneMax) {
+                double distToMin = Math.abs(normalizedAngle - ShooterConstants.kRightTurretDeadzoneMin);
+                double distToMax = Math.abs(normalizedAngle - ShooterConstants.kRightTurretDeadzoneMax);
+                return distToMin < distToMax ? ShooterConstants.kRightTurretDeadzoneMin - 0.1 : ShooterConstants.kRightTurretDeadzoneMax + 0.1;
             }
         }
         return normalizedAngle;
@@ -324,7 +288,7 @@ public class AimingCalculator {
      * Convert velocity to flywheel RPM
      */
     private static double velocityToRPM(double velocity) {
-        double angularVelocity = velocity / FLYWHEEL_RADIUS;
+        double angularVelocity = velocity / ShooterConstants.kFlywheelRadius;
         return angularVelocity * 60.0 / (2 * Math.PI);
     }
     
@@ -333,7 +297,7 @@ public class AimingCalculator {
      */
     private static double rpmToVelocity(double rpm) {
         double angularVelocity = rpm * 2 * Math.PI / 60.0;
-        return angularVelocity * FLYWHEEL_RADIUS;
+        return angularVelocity * ShooterConstants.kFlywheelRadius;
     }
     
     /**
