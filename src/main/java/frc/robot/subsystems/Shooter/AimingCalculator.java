@@ -39,19 +39,15 @@ public class AimingCalculator {
         14.0 * 0.0254,   // 0.2032m left (+Y)
         14.0 * 0.0254   // 0.3556m up (Z)
     );
-    
-    // TODO: Turret blind spot code doesn't seem to work correctly
 
-    // Turret FOV limits (in degrees, 0° = robot forward)
-    // Left turret: can aim anywhere except directly right (90° ± 15°)
-    // This means it CANNOT aim from 75° to 105°
-    private static final double LEFT_TURRET_DEADZONE_MIN = 75.0;
-    private static final double LEFT_TURRET_DEADZONE_MAX = 105.0;
+    // Turret FOV limits (in degrees, 0° = robot forward, positive CCW)
+    // Left turret: can aim anywhere except directly right (-90° ± 22.5°)
+    private static final double LEFT_TURRET_DEADZONE_MIN = -112.5;  // -90° - 22.5°
+    private static final double LEFT_TURRET_DEADZONE_MAX = -67.5;   // -90° + 22.5°
     
-    // Right turret: can aim anywhere except directly left (-90° ± 15°)  
-    // This means it CANNOT aim from -75° to -105°
-    private static final double RIGHT_TURRET_DEADZONE_MIN = -105.0;
-    private static final double RIGHT_TURRET_DEADZONE_MAX = -75.0;
+    // Right turret: can aim anywhere except directly left (90° ± 22.5°)  
+    private static final double RIGHT_TURRET_DEADZONE_MIN = 67.5;   // 90° - 22.5°
+    private static final double RIGHT_TURRET_DEADZONE_MAX = 112.5;  // 90° + 22.5°
     
     /**
      * Calculate complete aiming solution for moving robot
@@ -274,13 +270,13 @@ public class AimingCalculator {
         while (normalizedAngle < -180) normalizedAngle += 360;
         
         if (isLeftTurret) {
-            // Left turret cannot aim between 75° and 105° (directly right)
-            return normalizedAngle < LEFT_TURRET_DEADZONE_MIN || 
-                   normalizedAngle > LEFT_TURRET_DEADZONE_MAX;
+            // Left turret cannot aim between -112.5° and -67.5° (directly right)
+            return !(normalizedAngle >= LEFT_TURRET_DEADZONE_MIN && 
+                    normalizedAngle <= LEFT_TURRET_DEADZONE_MAX);
         } else {
-            // Right turret cannot aim between -105° and -75° (directly left)
-            return normalizedAngle < RIGHT_TURRET_DEADZONE_MIN || 
-                   normalizedAngle > RIGHT_TURRET_DEADZONE_MAX;
+            // Right turret cannot aim between 67.5° and 112.5° (directly left)
+            return !(normalizedAngle >= RIGHT_TURRET_DEADZONE_MIN && 
+                    normalizedAngle <= RIGHT_TURRET_DEADZONE_MAX);
         }
     }
     
@@ -294,7 +290,7 @@ public class AimingCalculator {
         while (normalizedAngle < -180) normalizedAngle += 360;
         
         if (isLeftTurret) {
-            // If in dead zone (75° to 105°), move to closest edge
+            // If in dead zone (-112.5° to -67.5°), move to closest edge
             if (normalizedAngle >= LEFT_TURRET_DEADZONE_MIN && 
                 normalizedAngle <= LEFT_TURRET_DEADZONE_MAX) {
                 double distToMin = Math.abs(normalizedAngle - LEFT_TURRET_DEADZONE_MIN);
@@ -302,7 +298,7 @@ public class AimingCalculator {
                 return distToMin < distToMax ? LEFT_TURRET_DEADZONE_MIN - 0.1 : LEFT_TURRET_DEADZONE_MAX + 0.1;
             }
         } else {
-            // If in dead zone (-105° to -75°), move to closest edge
+            // If in dead zone (67.5° to 112.5°), move to closest edge
             if (normalizedAngle >= RIGHT_TURRET_DEADZONE_MIN && 
                 normalizedAngle <= RIGHT_TURRET_DEADZONE_MAX) {
                 double distToMin = Math.abs(normalizedAngle - RIGHT_TURRET_DEADZONE_MIN);

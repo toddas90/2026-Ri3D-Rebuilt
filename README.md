@@ -54,5 +54,5 @@ TODO:
 5. Vision subsystem (Photonvision setup, real testing and tuning)
 6. Check library versions (in vendordeps) and update devices as needed.
 7. Clean up scattered constants
-8. 
-
+8. Map out all of the devices
+9. Probably forgetting things
