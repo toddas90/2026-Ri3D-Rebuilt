@@ -119,7 +119,7 @@ public class RobotContainer {
     // ==================== SHOOTING CONTROLS ====================
     
     // Left Trigger: Aim towards own driver station (shoot back)
-    m_operatorController.rightTrigger(0.5).whileTrue(
+    m_driverController.rightTrigger(0.5).whileTrue( // operator
         new AimAtTargetCommand(
             m_leftTurret,
             m_rightTurret,
@@ -131,7 +131,7 @@ public class RobotContainer {
     );
     
     // Right Trigger: Aim at hub
-    m_operatorController.leftTrigger(0.5).whileTrue(
+    m_driverController.leftTrigger(0.5).whileTrue( // operator
         new AimAtTargetCommand(
             m_leftTurret,
             m_rightTurret,
@@ -144,7 +144,7 @@ public class RobotContainer {
     // ==================== OPERATOR CONTROLLER BINDINGS ====================
 
     // Manual Turret Aiming - Left Bumper held + Left Stick controls left turret
-    m_operatorController.leftBumper().whileTrue(
+    m_driverController.leftBumper().whileTrue( // operator
         new ManualTurretAimCommand(
             m_leftTurret,
             () -> m_operatorController.getLeftX(),
@@ -154,7 +154,7 @@ public class RobotContainer {
     );
 
     // Manual Turret Aiming - Right Bumper held + Right Stick controls right turret
-    m_operatorController.rightBumper().whileTrue(
+    m_driverController.rightBumper().whileTrue( // operator
         new ManualTurretAimCommand(
             m_rightTurret,
             () -> m_operatorController.getRightX(),
@@ -164,7 +164,7 @@ public class RobotContainer {
     );
     
     // A Button: Manual shoot (spin up flywheels and run indexer)
-    m_operatorController.a().whileTrue(
+    m_driverController.a().whileTrue( // operator
         new ManualShootCommand(m_leftTurret, m_rightTurret, m_indexer)
     );
   }
@@ -180,6 +180,17 @@ public class RobotContainer {
             DEADBAND
         )
     );
+    
+    // Default command for turrets: continuously aim at hub WITHOUT spinning flywheels
+    Command aimAtHubCommand = new AimAtTargetCommand(
+        m_leftTurret,
+        m_rightTurret,
+        m_drive::getPose,
+        AimingCalculator::getTargetTowerPosition,
+        "Tower",
+        0.0  // maxRPM = 0 means no flywheel spin-up
+    );
+    m_leftTurret.setDefaultCommand(aimAtHubCommand);
   }
 
   /**
