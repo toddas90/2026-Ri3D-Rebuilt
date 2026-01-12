@@ -140,6 +140,7 @@ public class ClimbIOSim implements ClimbIO {
         inputs.liftAppliedVolts = liftAppliedVolts;
         inputs.liftCurrentAmps = liftSim.getCurrentDrawAmps();
         inputs.liftTempCelsius = 30.0 + (inputs.liftCurrentAmps * 0.5); // Simple temp model
+        inputs.liftSetpointMeters = liftSetpointMeters != null ? liftSetpointMeters : inputs.liftPositionMeters;
         
         // Set pivot inputs
         inputs.pivotPositionDegrees = getPivotAngleDegrees();
@@ -147,10 +148,7 @@ public class ClimbIOSim implements ClimbIO {
         inputs.pivotAppliedVolts = pivotAppliedVolts;
         inputs.pivotCurrentAmps = pivotSim.getCurrentDrawAmps();
         inputs.pivotTempCelsius = 30.0 + (inputs.pivotCurrentAmps * 0.5); // Simple temp model
-        
-        // Simulate limit switches
-        inputs.liftBottomLimit = liftSim.getPositionMeters() <= ClimbConstants.kLiftMinHeight + 0.01;
-        inputs.liftTopLimit = liftSim.getPositionMeters() >= ClimbConstants.kLiftMaxHeight - 0.01;
+        inputs.pivotSetpointDegrees = pivotSetpointDegrees != null ? pivotSetpointDegrees : inputs.pivotPositionDegrees;
     }
     
     @Override

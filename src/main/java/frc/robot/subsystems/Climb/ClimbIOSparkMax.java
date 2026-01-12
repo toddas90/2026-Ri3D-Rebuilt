@@ -24,12 +24,13 @@ public class ClimbIOSparkMax implements ClimbIO {
     private final SparkClosedLoopController liftPID;
     private final SparkClosedLoopController pivotPID;
     
-    private final DigitalInput liftBottomLimit;
-    private final DigitalInput liftTopLimit;
-    
     // Control mode tracking
     private boolean liftPositionMode = false;
     private boolean pivotPositionMode = false;
+
+    // Track setpoints
+    private double liftSetpointMeters = 0.0;
+    private double pivotSetpointDegrees = 0.0;
 
     @SuppressWarnings("removal") // Suppress warnings for deprecated ResetMode and PersistMode
     public ClimbIOSparkMax() {
@@ -42,10 +43,6 @@ public class ClimbIOSparkMax implements ClimbIO {
         pivotMotor = new SparkMax(ClimbConstants.kPivotMotorId, MotorType.kBrushless);
         pivotEncoder = pivotMotor.getEncoder();
         pivotPID = pivotMotor.getClosedLoopController();
-        
-        // Initialize limit switches
-        liftBottomLimit = new DigitalInput(ClimbConstants.kLiftBottomLimitPort);
-        liftTopLimit = new DigitalInput(ClimbConstants.kLiftTopLimitPort);
         
         // Configure motors
         configureLiftMotor();
@@ -130,9 +127,9 @@ public class ClimbIOSparkMax implements ClimbIO {
         inputs.pivotCurrentAmps = pivotMotor.getOutputCurrent();
         inputs.pivotTempCelsius = pivotMotor.getMotorTemperature();
         
-        // Limit switches (inverted because they're normally closed)
-        inputs.liftBottomLimit = !liftBottomLimit.get();
-        inputs.liftTopLimit = !liftTopLimit.get();
+        // Add setpoint tracking
+        inputs.liftSetpointMeters = liftPositionMode ? liftSetpointMeters : inputs.liftPositionMeters;
+        inputs.pivotSetpointDegrees = pivotPositionMode ? pivotSetpointDegrees : inputs.pivotPositionDegrees;
     }
     
     @Override
@@ -143,7 +140,8 @@ public class ClimbIOSparkMax implements ClimbIO {
             ClimbConstants.kLiftMinHeight, 
             ClimbConstants.kLiftMaxHeight
         );
-        liftPID.setSetpoint(clampedPosition, ControlType.kPosition);
+        liftSetpointMeters = clampedPosition;  // Track the setpoint
+        liftPID.setReference(clampedPosition, ControlType.kPosition);
     }
     
     @Override
@@ -154,7 +152,8 @@ public class ClimbIOSparkMax implements ClimbIO {
             ClimbConstants.kPivotMinAngle,
             ClimbConstants.kPivotMaxAngle
         );
-        pivotPID.setSetpoint(clampedAngle, ControlType.kPosition);
+        pivotSetpointDegrees = clampedAngle;  // Track the setpoint
+        pivotPID.setReference(clampedAngle, ControlType.kPosition);
     }
     
     @Override

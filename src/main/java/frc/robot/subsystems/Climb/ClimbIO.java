@@ -11,6 +11,7 @@ public interface ClimbIO {
         public double liftAppliedVolts = 0.0;
         public double liftCurrentAmps = 0.0;
         public double liftTempCelsius = 0.0;
+        public double liftSetpointMeters = 0.0;
         
         // Pivot motor inputs
         public double pivotPositionDegrees = 0.0;
@@ -18,10 +19,7 @@ public interface ClimbIO {
         public double pivotAppliedVolts = 0.0;
         public double pivotCurrentAmps = 0.0;
         public double pivotTempCelsius = 0.0;
-        
-        // Limit switches
-        public boolean liftBottomLimit = false;
-        public boolean liftTopLimit = false;
+        public double pivotSetpointDegrees = 0.0;
     }
     
     /** Updates the set of loggable inputs */

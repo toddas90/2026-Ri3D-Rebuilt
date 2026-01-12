@@ -48,11 +48,10 @@ public class Climb extends SubsystemBase {
         
         // Log additional data
         Logger.recordOutput("Climb/LiftPositionMeters", inputs.liftPositionMeters);
+        Logger.recordOutput("Climb/LiftSetpointMeters", inputs.liftSetpointMeters);
         Logger.recordOutput("Climb/LiftVelocityMPS", inputs.liftVelocityMetersPerSec);
         Logger.recordOutput("Climb/PivotPositionDegrees", inputs.pivotPositionDegrees);
         Logger.recordOutput("Climb/PivotVelocityDPS", inputs.pivotVelocityDegreesPerSec);
-        Logger.recordOutput("Climb/LiftAtBottom", inputs.liftBottomLimit);
-        Logger.recordOutput("Climb/LiftAtTop", inputs.liftTopLimit);
         Logger.recordOutput("Climb/LiftCurrent", inputs.liftCurrentAmps);
         Logger.recordOutput("Climb/PivotCurrent", inputs.pivotCurrentAmps);
     }
@@ -84,15 +83,15 @@ public class Climb extends SubsystemBase {
      * Manually control lift with voltage
      * @param voltage Voltage to apply (-12 to 12)
      */
-    public void setLiftVoltage(double voltage) {
-        // Apply safety limits
-        if ((inputs.liftBottomLimit && voltage < 0) || 
-            (inputs.liftTopLimit && voltage > 0)) {
-            io.setLiftVoltage(0.0);
-        } else {
-            io.setLiftVoltage(voltage);
-        }
-    }
+    // public void setLiftVoltage(double voltage) {
+    //     // Apply safety limits
+    //     if ((inputs.liftBottomLimit && voltage < 0) || 
+    //         (inputs.liftTopLimit && voltage > 0)) {
+    //         io.setLiftVoltage(0.0);
+    //     } else {
+    //         io.setLiftVoltage(voltage);
+    //     }
+    // }
     
     /**
      * Get current lift height
