@@ -1,9 +1,9 @@
 2x variable-hood shooters
 
-Turrets?
-
 velocity pid control for flywheel
 
-position pid control for hood?
+servo control for hood
+
+position pid for turret
 
 indexer 2x opposing wheels (geared?)

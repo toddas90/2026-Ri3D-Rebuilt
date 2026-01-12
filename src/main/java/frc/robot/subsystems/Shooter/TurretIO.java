@@ -13,7 +13,8 @@ public interface TurretIO {
         public double hoodCurrent = 0.0;
         public double turretVoltage = 0.0;
         public double hoodVoltage = 0.0;
-        public double flywheelVelocityRPM = 0.0;  // Add this
+        public double flywheelVelocityRPM = 0.0;
+        public double flywheelTargetRPM = 0.0;
   }
 
     /** Updates the set of loggable inputs */
@@ -23,6 +24,9 @@ public interface TurretIO {
     public default void setFlywheelVoltage(double voltage) {}
     public default void setHoodVoltage(double voltage) {}
     public default void setTurretVoltage(double voltage) {}
+
+    /** Set flywheel target velocity in RPM */
+    public default void setFlywheelVelocity(double rpm) {}
 
     /** Stop motors */
     public default void stop() {}

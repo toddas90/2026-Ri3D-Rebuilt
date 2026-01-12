@@ -9,30 +9,33 @@ import frc.robot.Constants.ShooterConstants;
 public class Turret extends SubsystemBase {
     private final TurretIO io;
     private final TurretIOInputsAutoLogged inputs = new TurretIOInputsAutoLogged();
+    private final String name;
 
     private static final double MAX_VOLTAGE = 12.0;
 
-    public Turret(TurretIO io) {
+    public Turret(TurretIO io, String name) {
         this.io = io;
+        this.name = name;
     }
 
     @Override
     public void periodic() {
         io.updateInputs(inputs);
-        Logger.processInputs("Shooter/Turret", inputs);
+        Logger.processInputs("Shooter/" + name, inputs);
         
         // Log data
-        Logger.recordOutput("Shooter/Turret/FlywheelAppliedVoltage", inputs.flywheelVoltage);
-        Logger.recordOutput("Shooter/Turret/FlywheelCurrent", inputs.flywheelCurrent);
-        Logger.recordOutput("Shooter/Turret/TurretAngleDegrees", inputs.turretAngleDegrees);
-        Logger.recordOutput("Shooter/Turret/HoodAngleDegrees", inputs.hoodAngleDegrees);
-        Logger.recordOutput("Shooter/Turret/TurretAppliedVoltage", inputs.turretVoltage);
-        Logger.recordOutput("Shooter/Turret/TurretCurrent", inputs.turretCurrent);
-        Logger.recordOutput("Shooter/Turret/HoodAppliedVoltage", inputs.hoodVoltage);
-        Logger.recordOutput("Shooter/Turret/HoodCurrent", inputs.hoodCurrent);
+        Logger.recordOutput("Shooter/" + name + "/FlywheelAppliedVoltage", inputs.flywheelVoltage);
+        Logger.recordOutput("Shooter/" + name + "/FlywheelCurrent", inputs.flywheelCurrent);
+        Logger.recordOutput("Shooter/" + name + "/TurretAngleDegrees", inputs.turretAngleDegrees);
+        Logger.recordOutput("Shooter/" + name + "/HoodAngleDegrees", inputs.hoodAngleDegrees);
+        Logger.recordOutput("Shooter/" + name + "/TurretAppliedVoltage", inputs.turretVoltage);
+        Logger.recordOutput("Shooter/" + name + "/TurretCurrent", inputs.turretCurrent);
+        Logger.recordOutput("Shooter/" + name + "/HoodAppliedVoltage", inputs.hoodVoltage);
+        Logger.recordOutput("Shooter/" + name + "/HoodCurrent", inputs.hoodCurrent);
         
         // Log additional data
-        Logger.recordOutput("Shooter/Turret/FlywheelVelocityRPM", inputs.flywheelVelocityRPM);
+        Logger.recordOutput("Shooter/" + name + "/FlywheelVelocityRPM", inputs.flywheelVelocityRPM);
+        Logger.recordOutput("Shooter/" + name + "/FlywheelTargetRPM", inputs.flywheelTargetRPM);
     }
 
     // ==================== Turret Control ====================
@@ -111,11 +114,27 @@ public class Turret extends SubsystemBase {
     }
     
     /**
+     * Set flywheel target velocity
+     * @param rpm Target velocity in RPM
+     */
+    public void setFlywheelVelocity(double rpm) {
+        io.setFlywheelVelocity(rpm);
+    }
+    
+    /**
      * Get the current flywheel velocity
      * @return Flywheel velocity in RPM
      */
     public double getFlywheelVelocityRPM() {
         return inputs.flywheelVelocityRPM;
+    }
+    
+    /**
+     * Get the current flywheel target velocity
+     * @return Flywheel target velocity in RPM
+     */
+    public double getFlywheelTargetRPM() {
+        return inputs.flywheelTargetRPM;
     }
     
     /**
@@ -126,6 +145,15 @@ public class Turret extends SubsystemBase {
      */
     public boolean isFlywheelAtSpeed(double targetRPM, double toleranceRPM) {
         return Math.abs(inputs.flywheelVelocityRPM - targetRPM) < toleranceRPM;
+    }
+    
+    /**
+     * Check if flywheel is at its current target speed
+     * @param toleranceRPM Acceptable tolerance
+     * @return True if within tolerance of target
+     */
+    public boolean isFlywheelAtTargetSpeed(double toleranceRPM) {
+        return Math.abs(inputs.flywheelVelocityRPM - inputs.flywheelTargetRPM) < toleranceRPM;
     }
     
     // ==================== Combined Control ====================
@@ -141,7 +169,7 @@ public class Turret extends SubsystemBase {
     }
     
     /**
-     * Prepare to shoot with specific parameters
+     * Prepare to shoot with specific parameters (using voltage)
      * @param turretAngleDegrees Turret angle
      * @param hoodAngleDegrees Hood angle
      * @param flywheelVoltage Flywheel voltage
@@ -149,6 +177,17 @@ public class Turret extends SubsystemBase {
     public void prepareShot(double turretAngleDegrees, double hoodAngleDegrees, double flywheelVoltage) {
         aim(turretAngleDegrees, hoodAngleDegrees);
         setFlywheelVoltage(flywheelVoltage);
+    }
+    
+    /**
+     * Prepare to shoot with specific parameters (using velocity control)
+     * @param turretAngleDegrees Turret angle
+     * @param hoodAngleDegrees Hood angle
+     * @param flywheelRPM Flywheel target velocity in RPM
+     */
+    public void prepareShotVelocity(double turretAngleDegrees, double hoodAngleDegrees, double flywheelRPM) {
+        aim(turretAngleDegrees, hoodAngleDegrees);
+        setFlywheelVelocity(flywheelRPM);
     }
     
     /**

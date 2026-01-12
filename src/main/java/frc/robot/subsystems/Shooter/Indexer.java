@@ -25,6 +25,22 @@ public class Indexer extends SubsystemBase {
         Logger.recordOutput("Shooter/Indexer/Current", inputs.indexerCurrent);
     }
 
-    // Define method here for setting power / controlling the indexer movement.
-    // public void blah(double thing) {}
+    // ==================== Indexer Control ====================
+    /**
+     * Start indexer
+     */
+    public void start() {
+        io.setVoltage(MAX_VOLTAGE);
+    }
+
+    /**
+     * Stop indexer
+     */
+    public void stop() {
+        io.stop();
+    }
+
+    public boolean isRunning() {
+        return inputs.indexerCurrent > 0.1;
+    }
 }

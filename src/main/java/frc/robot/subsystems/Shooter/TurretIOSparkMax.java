@@ -1,52 +1,55 @@
 package frc.robot.subsystems.Shooter;
 
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkClosedLoopController;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.Servo;
 import frc.robot.Constants.ShooterConstants;
 
 public class TurretIOSparkMax implements TurretIO {
     private final SparkMax turretMotor;
-    private final SparkMax hoodMotor;
+    private final Servo hoodServo;
     private final SparkMax flywheelMotor;
     
     private final RelativeEncoder turretEncoder;
-    private final RelativeEncoder hoodEncoder;
     private final RelativeEncoder flywheelEncoder;
 
     private final SparkClosedLoopController turretController;
-    private final SparkClosedLoopController hoodController;
+    private final SparkClosedLoopController flywheelController;
+    
+    // Hood servo PWM channel
+    private static final int HOOD_SERVO_CHANNEL = ShooterConstants.kHoodServoChannel;
+    
+    // Track hood angle for logging
+    private double hoodAngleDegrees = 0.0;
+    
+    // Track flywheel target for logging
+    private double flywheelTargetRPM = 0.0;
     
     @SuppressWarnings("removal") // Suppress warnings for deprecated ResetMode and PersistMode
     public TurretIOSparkMax() {
         turretMotor = new SparkMax(ShooterConstants.kTurretMotorId, MotorType.kBrushless);
-        hoodMotor = new SparkMax(ShooterConstants.kHoodMotorId, MotorType.kBrushless);
+        hoodServo = new Servo(HOOD_SERVO_CHANNEL);
         flywheelMotor = new SparkMax(ShooterConstants.kFlywheelMotorId, MotorType.kBrushless);
         
         // Get encoders from NEO motors
         turretEncoder = turretMotor.getEncoder();
-        hoodEncoder = hoodMotor.getEncoder();
         flywheelEncoder = flywheelMotor.getEncoder();
 
         turretController = turretMotor.getClosedLoopController();
-        hoodController = hoodMotor.getClosedLoopController();
+        flywheelController = flywheelMotor.getClosedLoopController();
         
         // Configure motors
         turretMotor.configure(
             configureTurretMotor(), 
-            ResetMode.kResetSafeParameters, 
-            PersistMode.kPersistParameters
-        );
-        hoodMotor.configure(
-            configureHoodMotor(), 
             ResetMode.kResetSafeParameters, 
             PersistMode.kPersistParameters
         );
@@ -73,28 +76,19 @@ public class TurretIOSparkMax implements TurretIO {
         return config;
     }
     
-    private SparkMaxConfig configureHoodMotor() {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.inverted(false);
-        config.idleMode(IdleMode.kBrake);
-        config.smartCurrentLimit(ShooterConstants.kHoodCurrentLimit);
-        // Configure encoder conversion factor
-        config.encoder.positionConversionFactor(ShooterConstants.kHoodDegreesPerRotation);
-        config.encoder.velocityConversionFactor(ShooterConstants.kHoodDegreesPerRotation / 60.0);
-        // Add PID gains for position control
-        config.closedLoop.p(ShooterConstants.kHoodP);
-        config.closedLoop.i(ShooterConstants.kHoodI);
-        config.closedLoop.d(ShooterConstants.kHoodD);
-        config.closedLoop.outputRange(-1.0, 1.0);
-        return config;
-    }
-    
     private SparkMaxConfig configureFlywheelMotor() {
         SparkMaxConfig config = new SparkMaxConfig();
         config.inverted(false);
         config.idleMode(IdleMode.kCoast); // Coast for flywheel
         config.smartCurrentLimit(ShooterConstants.kFlywheelCurrentLimit);
-        // Flywheel uses RPM directly (no gear ratio conversion needed for velocity)
+        // Flywheel uses RPM directly
+        config.encoder.velocityConversionFactor(1.0); // Already in RPM
+        // Add PID gains for velocity control
+        config.closedLoop.p(ShooterConstants.kFlywheelP);
+        config.closedLoop.i(ShooterConstants.kFlywheelI);
+        config.closedLoop.d(ShooterConstants.kFlywheelD);
+        config.closedLoop.velocityFF(ShooterConstants.kFlywheelFF);
+        config.closedLoop.outputRange(-1.0, 1.0);
         return config;
     }
     
@@ -105,15 +99,16 @@ public class TurretIOSparkMax implements TurretIO {
         inputs.turretCurrent = turretMotor.getOutputCurrent();
         inputs.turretAngleDegrees = turretEncoder.getPosition();
         
-        // Hood inputs
-        inputs.hoodVoltage = hoodMotor.getAppliedOutput() * hoodMotor.getBusVoltage();
-        inputs.hoodCurrent = hoodMotor.getOutputCurrent();
-        inputs.hoodAngleDegrees = hoodEncoder.getPosition();
+        // Hood servo inputs
+        inputs.hoodVoltage = 0.0; // Servos don't report voltage
+        inputs.hoodCurrent = 0.0; // Servos don't report current
+        inputs.hoodAngleDegrees = hoodAngleDegrees;
         
         // Flywheel inputs
         inputs.flywheelVoltage = flywheelMotor.getAppliedOutput() * flywheelMotor.getBusVoltage();
         inputs.flywheelCurrent = flywheelMotor.getOutputCurrent();
         inputs.flywheelVelocityRPM = flywheelEncoder.getVelocity();
+        inputs.flywheelTargetRPM = flywheelTargetRPM;
     }
     
     @Override
@@ -124,32 +119,46 @@ public class TurretIOSparkMax implements TurretIO {
     
     @Override
     public void setHoodVoltage(double voltage) {
-        double clampedVoltage = MathUtil.clamp(voltage, -12.0, 12.0);
-        hoodMotor.setVoltage(clampedVoltage);
+        // Servos don't use voltage control - this is a no-op
+        // Use setHoodAngle() instead
     }
     
     @Override
     public void setFlywheelVoltage(double voltage) {
+        flywheelTargetRPM = 0.0; // Clear velocity target when using voltage
         double clampedVoltage = MathUtil.clamp(voltage, -12.0, 12.0);
         flywheelMotor.setVoltage(clampedVoltage);
     }
 
     @Override
+    public void setFlywheelVelocity(double rpm) {
+        flywheelTargetRPM = rpm;
+        flywheelController.setReference(rpm, ControlType.kVelocity);
+    }
+
+    @Override
     public void setTurretAngle(double angleDegrees) {
-        turretController.setSetpoint(angleDegrees, 
-            ControlType.kPosition);
+        turretController.setReference(angleDegrees, ControlType.kPosition);
     }
 
     @Override
     public void setHoodAngle(double angleDegrees) {
-        hoodController.setSetpoint(angleDegrees, 
-            ControlType.kPosition);
+        // Clamp to valid range
+        hoodAngleDegrees = MathUtil.clamp(angleDegrees, 
+            ShooterConstants.kHoodMinAngle, 
+            ShooterConstants.kHoodMaxAngle);
+        
+        // Convert degrees to servo position (0.0 to 1.0)
+        double range = ShooterConstants.kHoodMaxAngle - ShooterConstants.kHoodMinAngle;
+        double position = (hoodAngleDegrees - ShooterConstants.kHoodMinAngle) / range;
+        hoodServo.set(position);
     }
     
     @Override
     public void stop() {
+        flywheelTargetRPM = 0.0;
         turretMotor.stopMotor();
-        hoodMotor.stopMotor();
         flywheelMotor.stopMotor();
+        // Servo holds position when stopped
     }
 }

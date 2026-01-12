@@ -5,6 +5,11 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.Constants.ShooterConstants;
+import frc.robot.commands.AimAtTargetCommand;
+import frc.robot.commands.FieldOrientedDriveCommand;
+import frc.robot.commands.ManualShootCommand;
+import frc.robot.commands.ManualTurretAimCommand;
 import frc.robot.subsystems.Drive.Drive;
 import frc.robot.subsystems.Drive.DriveIO;
 import frc.robot.subsystems.Drive.DriveIOSim;
@@ -17,13 +22,17 @@ import frc.robot.subsystems.Vision.VisionIOPhotonVision;
 import frc.robot.subsystems.Vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.Vision.VisionConstants;
 import frc.robot.subsystems.Shooter.Turret;
+import frc.robot.subsystems.Shooter.TurretIO;
+import frc.robot.subsystems.Shooter.TurretIOSim;
 import frc.robot.subsystems.Shooter.Indexer;
-import edu.wpi.first.math.MathUtil;
+import frc.robot.subsystems.Shooter.IndexerIO;
+import frc.robot.subsystems.Shooter.IndexerIOSim;
+import frc.robot.subsystems.Shooter.IndexerIOSparkMax;
+import frc.robot.subsystems.Shooter.TurretIOSparkMax;
+import frc.robot.subsystems.Shooter.AimingCalculator;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-
-import frc.robot.commands.DriveIntakeForwardCommand;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -36,8 +45,9 @@ public class RobotContainer {
   private final Drive m_drive;
   private final Vision m_vision;
 
-  // private final Shooter m_shooter;
-  // private final Indexer m_indexer;
+  private final Turret m_leftTurret;
+  private final Turret m_rightTurret;
+  private final Indexer m_indexer;
 
   // Controllers
   private final CommandXboxController m_driverController =
@@ -49,6 +59,9 @@ public class RobotContainer {
 
   // Deadband for joystick inputs
   private static final double DEADBAND = OperatorConstants.kControllerDeadband;
+  
+  // Max RPM for shooting back to driver station
+  private static final double MAX_SHOOT_BACK_RPM = ShooterConstants.kShootBackRPM;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -60,7 +73,11 @@ public class RobotContainer {
             new VisionIOPhotonVision(VisionConstants.camera0Name, VisionConstants.robotToCamera0),
             new VisionIOPhotonVision(VisionConstants.camera1Name, VisionConstants.robotToCamera1)
         );
+        m_indexer = new Indexer(new IndexerIOSparkMax());
+        m_leftTurret = new Turret(new TurretIOSparkMax(), "LeftTurret");
+        m_rightTurret = new Turret(new TurretIOSparkMax(), "RightTurret");
         break;
+
       case SIM:
         m_drive = new Drive(new DriveIOSim(), new GyroIOSim());
         m_vision = new Vision(
@@ -74,10 +91,17 @@ public class RobotContainer {
                 VisionConstants.robotToCamera1, 
                 m_drive::getPose)
         );
+        m_indexer = new Indexer(new IndexerIOSim());
+        m_leftTurret = new Turret(new TurretIOSim(), "LeftTurret");
+        m_rightTurret = new Turret(new TurretIOSim(), "RightTurret");
         break;
+
       default:
         m_drive = new Drive(new DriveIO() {}, new GyroIO() {});
         m_vision = new Vision(m_drive::addVisionMeasurement);
+        m_indexer = new Indexer(new IndexerIO() {});
+        m_leftTurret = new Turret(new TurretIO() {}, "LeftTurret");
+        m_rightTurret = new Turret(new TurretIO() {}, "RightTurret");
     }
 
     // Configure the trigger bindings
@@ -91,53 +115,69 @@ public class RobotContainer {
     // Driver Controller bindings
     // Reset gyro with Start button
     m_driverController.start().onTrue(Commands.runOnce(() -> m_drive.resetGyro()));
+
+    // ==================== SHOOTING CONTROLS ====================
     
-    // Reset pose with Back button
-    m_driverController.back().onTrue(Commands.runOnce(() -> m_drive.resetPose()));
+    // Left Trigger: Aim towards own driver station (shoot back)
+    m_operatorController.rightTrigger(0.5).whileTrue(
+        new AimAtTargetCommand(
+            m_leftTurret,
+            m_rightTurret,
+            m_drive::getPose,
+            AimingCalculator::getDriverStationPosition,
+            "DriverStation",
+            MAX_SHOOT_BACK_RPM
+        )
+    );
     
-    // Operator Controller bindings
+    // Right Trigger: Aim at hub
+    m_operatorController.leftTrigger(0.5).whileTrue(
+        new AimAtTargetCommand(
+            m_leftTurret,
+            m_rightTurret,
+            m_drive::getPose,
+            AimingCalculator::getTargetTowerPosition,
+            "Tower"
+        )
+    );
+    
+    // ==================== OPERATOR CONTROLLER BINDINGS ====================
+
+    // Manual Turret Aiming - Left Bumper held + Left Stick controls left turret
+    m_operatorController.leftBumper().whileTrue(
+        new ManualTurretAimCommand(
+            m_leftTurret,
+            () -> m_operatorController.getLeftX(),
+            () -> -m_operatorController.getLeftY(), // Inverted Y
+            0.5 // Deadband
+        )
+    );
+
+    // Manual Turret Aiming - Right Bumper held + Right Stick controls right turret
+    m_operatorController.rightBumper().whileTrue(
+        new ManualTurretAimCommand(
+            m_rightTurret,
+            () -> m_operatorController.getRightX(),
+            () -> -m_operatorController.getRightY(), // Inverted Y
+            0.5 // Deadband
+        )
+    );
+    
+    // A Button: Manual shoot (spin up flywheels and run indexer)
+    m_operatorController.a().whileTrue(
+        new ManualShootCommand(m_leftTurret, m_rightTurret, m_indexer)
+    );
   }
 
   private void configureDefaultCommands() {
     // Set default command for drive to field-oriented control
     m_drive.setDefaultCommand(
-      // new DriveIntakeForwardCommand(
-      //     m_drive,
-      //     () -> {
-      //       double xSpeed = -m_driverController.getLeftY(); // Forward/backward (inverted)
-      //       xSpeed = MathUtil.applyDeadband(xSpeed, DEADBAND);
-      //       xSpeed = Math.copySign(xSpeed * xSpeed, xSpeed);
-      //       return xSpeed;
-      //     },
-      //     () -> {
-      //       double ySpeed = -m_driverController.getLeftX(); // Left/right (inverted)
-      //       ySpeed = MathUtil.applyDeadband(ySpeed, DEADBAND);
-      //       ySpeed = Math.copySign(ySpeed * ySpeed, ySpeed);
-      //       return ySpeed;
-      //     }
-      // )
-      // ----- ^ Weird intake-centric drive ^ -----
-        Commands.run(
-            () -> {
-              // Get joystick inputs
-              double xSpeed = -m_driverController.getLeftY(); // Forward/backward (inverted)
-              double ySpeed = -m_driverController.getLeftX(); // Left/right (inverted)
-              double rotation = -m_driverController.getRightX(); // Rotation (inverted)
-              
-              // Apply deadband
-              xSpeed = MathUtil.applyDeadband(xSpeed, DEADBAND);
-              ySpeed = MathUtil.applyDeadband(ySpeed, DEADBAND);
-              rotation = MathUtil.applyDeadband(rotation, DEADBAND);
-              
-              // Square inputs for finer control (while preserving sign)
-              xSpeed = Math.copySign(xSpeed * xSpeed, xSpeed);
-              ySpeed = Math.copySign(ySpeed * ySpeed, ySpeed);
-              rotation = Math.copySign(rotation * rotation, rotation);
-              
-              // Drive field-oriented
-              m_drive.driveFieldOriented(xSpeed, ySpeed, rotation);
-            },
-            m_drive
+        new FieldOrientedDriveCommand(
+            m_drive,
+            () -> -m_driverController.getLeftY(),  // Forward/backward (inverted)
+            () -> -m_driverController.getLeftX(),  // Left/right (inverted)
+            () -> -m_driverController.getRightX(), // Rotation (inverted) ?????
+            DEADBAND
         )
     );
   }
