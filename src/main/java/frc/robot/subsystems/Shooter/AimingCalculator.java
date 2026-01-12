@@ -1,7 +1,10 @@
 package frc.robot.subsystems.Shooter;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.Constants.ShooterConstants;
@@ -9,209 +12,342 @@ import org.littletonrobotics.junction.Logger;
 
 public class AimingCalculator {
     
-    // Turret angle limits (in degrees, relative to turret's forward direction)
-    // 0° = turret facing its default direction, positive = counterclockwise
-    // Both turrets have ±120° range but cannot aim through the elevator (center of robot)
+    // Physical Constants
+    private static final double GRAVITY = 9.81; // m/s^2
+    private static final double FLYWHEEL_RADIUS = 1.5 * 0.0254; // 1.5" radius in meters
+    private static final double MAX_FLYWHEEL_RPM = 5600.0;
+    private static final double LAUNCH_EFFICIENCY = 0.80; // Energy transfer efficiency
     
-    // Left turret: default facing is robot's left side
-    public static final double LEFT_TURRET_MIN_ANGLE = -120.0;
-    public static final double LEFT_TURRET_MAX_ANGLE = 120.0;
+    // Hood angle limits
+    private static final double MIN_HOOD_ANGLE = 45.0; // degrees - distance shot
+    private static final double MAX_HOOD_ANGLE = 75.0; // degrees - upward shot
     
-    // Right turret: default facing is robot's right side
-    public static final double RIGHT_TURRET_MIN_ANGLE = -120.0;
-    public static final double RIGHT_TURRET_MAX_ANGLE = 120.0;
+    // Target height (hub is 72" tall, opening on top)
+    private static final double TARGET_HEIGHT = 72.0 * 0.0254; // 1.8288m
+    
+    // Turret mounting positions (from robot center)
+    // Right turret: +14" forward (X), -8" right (Y), +14" up (Z)
+    private static final Translation3d RIGHT_TURRET_POSITION = new Translation3d(
+        8.0 * 0.0254,  // 0.3556m forward (X)
+        -14.0 * 0.0254,  // 0.2032m right (-Y)
+        14.0 * 0.0254   // 0.3556m up (Z)
+    );
+    
+    // Left turret: +14" forward (X), +8" left (Y), +14" up (Z)
+    private static final Translation3d LEFT_TURRET_POSITION = new Translation3d(
+        8.0 * 0.0254,  // 0.3556m forward (X)
+        14.0 * 0.0254,   // 0.2032m left (+Y)
+        14.0 * 0.0254   // 0.3556m up (Z)
+    );
+    
+    // Turret FOV limits (in degrees, 0° = robot forward)
+    // Left turret: can aim from -45° (slightly right) to 240° (back-left)
+    private static final double LEFT_TURRET_MIN = -45.0;
+    private static final double LEFT_TURRET_MAX = 240.0;
+    
+    // Right turret: can aim from 45° (slightly left) to -240° (back-right)  
+    private static final double RIGHT_TURRET_MIN = -240.0;
+    private static final double RIGHT_TURRET_MAX = 45.0;
     
     /**
-     * Calculate the turret angle to aim at a target position
-     * @param robotPose Current robot pose
-     * @param targetPosition Target position on the field
-     * @param turretOnLeft Whether this turret is on the left side of the robot
-     * @return Turret angle in degrees (0 = turret's forward, positive = counterclockwise)
+     * Calculate complete aiming solution for moving robot
      */
-    public static double calculateTurretAngle(Pose2d robotPose, Translation2d targetPosition, boolean turretOnLeft) {
-        // Vector from robot to target
-        Translation2d robotToTarget = targetPosition.minus(robotPose.getTranslation());
+    public static AimingParameters calculateAiming(
+            Pose2d robotPose,
+            ChassisSpeeds robotVelocity,
+            Translation2d targetPosition,
+            boolean isLeftTurret) {
         
-        // Angle to target in field coordinates
-        double fieldAngleToTarget = Math.atan2(robotToTarget.getY(), robotToTarget.getX());
+        // Get turret position in 3D space
+        Translation3d turretPos3d = isLeftTurret ? LEFT_TURRET_POSITION : RIGHT_TURRET_POSITION;
         
-        // Convert to robot-relative angle
-        double robotAngle = robotPose.getRotation().getRadians();
-        double robotRelativeAngle = fieldAngleToTarget - robotAngle;
+        // Convert to 2D field position
+        Translation2d turretOffset2d = new Translation2d(turretPos3d.getX(), turretPos3d.getY());
+        Translation2d rotatedOffset = turretOffset2d.rotateBy(robotPose.getRotation());
+        Translation2d turretFieldPos = robotPose.getTranslation().plus(rotatedOffset);
         
-        // Normalize to [-180, 180] degrees
-        double angleDegrees = Math.toDegrees(robotRelativeAngle);
-        angleDegrees = normalizeAngle(angleDegrees);
+        // Calculate initial distance to target
+        double horizontalDistance = turretFieldPos.getDistance(targetPosition);
+        double verticalDistance = TARGET_HEIGHT - turretPos3d.getZ();
         
-        // Log intermediate calculations
-        String side = turretOnLeft ? "Left" : "Right";
-        Logger.recordOutput("AimingCalculator/" + side + "/FieldAngleToTarget", Math.toDegrees(fieldAngleToTarget));
-        Logger.recordOutput("AimingCalculator/" + side + "/RobotAngle", Math.toDegrees(robotAngle));
-        Logger.recordOutput("AimingCalculator/" + side + "/RobotRelativeAngle", angleDegrees);
+        // Find optimal trajectory (iterative approach for moving target)
+        TrajectoryResult trajectory = findOptimalTrajectory(
+            turretFieldPos, 
+            targetPosition,
+            turretPos3d.getZ(),
+            TARGET_HEIGHT,
+            robotPose,
+            robotVelocity
+        );
         
-        // Adjust based on which side the turret is on
-        // Left turret faces left (+90 from front), right turret faces right (-90 from front)
-        if (turretOnLeft) {
-            angleDegrees -= 90; // Turret's forward is robot's left
-        } else {
-            angleDegrees += 90; // Turret's forward is robot's right
+        // Calculate turret angle accounting for projectile flight time
+        double turretAngle = calculateTurretAngle(
+            robotPose,
+            robotVelocity,
+            turretFieldPos,
+            targetPosition,
+            trajectory.flightTime,
+            isLeftTurret
+        );
+        
+        // Check if turret can reach this angle
+        boolean canReach = isAngleReachable(turretAngle, isLeftTurret);
+        if (!canReach) {
+            turretAngle = clampTurretAngle(turretAngle, isLeftTurret);
         }
         
-        double normalizedAngle = normalizeAngle(angleDegrees);
-        Logger.recordOutput("AimingCalculator/" + side + "/TurretAngle", normalizedAngle);
+        // Convert exit velocity to flywheel RPM
+        double flywheelRPM = velocityToRPM(trajectory.launchVelocity);
+        flywheelRPM = Math.min(flywheelRPM, MAX_FLYWHEEL_RPM);
         
-        return normalizedAngle;
+        // Log results
+        String side = isLeftTurret ? "Left" : "Right";
+        Logger.recordOutput("Aiming/" + side + "/Distance", horizontalDistance);
+        Logger.recordOutput("Aiming/" + side + "/HoodAngle", trajectory.hoodAngle);
+        Logger.recordOutput("Aiming/" + side + "/LaunchVelocity", trajectory.launchVelocity);
+        Logger.recordOutput("Aiming/" + side + "/FlightTime", trajectory.flightTime);
+        Logger.recordOutput("Aiming/" + side + "/TurretAngle", turretAngle);
+        Logger.recordOutput("Aiming/" + side + "/FlywheelRPM", flywheelRPM);
+        Logger.recordOutput("Aiming/" + side + "/CanReach", canReach);
+        Logger.recordOutput("Aiming/" + side + "/ValidSolutionFound", trajectory.isValidSolution);
+        
+        return new AimingParameters(
+            turretAngle,
+            trajectory.hoodAngle,
+            flywheelRPM,
+            horizontalDistance,
+            canReach
+        );
     }
     
     /**
-     * Check if a turret can reach the target angle
-     * @param turretAngle The calculated turret angle
-     * @param turretOnLeft Whether this is the left turret
-     * @return True if the turret can physically reach this angle
+     * Find optimal trajectory using iterative refinement
      */
-    public static boolean canTurretReachAngle(double turretAngle, boolean turretOnLeft) {
-        boolean canReach;
-        if (turretOnLeft) {
-            canReach = turretAngle >= LEFT_TURRET_MIN_ANGLE && turretAngle <= LEFT_TURRET_MAX_ANGLE;
-        } else {
-            canReach = turretAngle >= RIGHT_TURRET_MIN_ANGLE && turretAngle <= RIGHT_TURRET_MAX_ANGLE;
+    private static TrajectoryResult findOptimalTrajectory(
+            Translation2d turretPosition,
+            Translation2d targetPosition,
+            double shooterHeight,
+            double targetHeight,
+            Pose2d robotPose,
+            ChassisSpeeds robotVelocity) {
+        
+        double distance = turretPosition.getDistance(targetPosition);
+        double heightDiff = targetHeight - shooterHeight;
+        
+        // Direction vector from turret to target (for velocity compensation)
+        Translation2d toTarget = targetPosition.minus(turretPosition);
+        double shootAngle = Math.atan2(toTarget.getY(), toTarget.getX());
+        
+        // Component of robot velocity in shooting direction
+        double robotSpeed = robotVelocity.vxMetersPerSecond * Math.cos(shootAngle) +
+                           robotVelocity.vyMetersPerSecond * Math.sin(shootAngle);
+        
+        // Try different hood angles to find optimal solution
+        double bestHoodAngle = MIN_HOOD_ANGLE;
+        double bestVelocity = Double.MAX_VALUE;
+        double bestFlightTime = 0;
+        boolean foundValidSolution = false;
+        int validSolutionCount = 0;
+        
+        for (double hoodAngle = MIN_HOOD_ANGLE; hoodAngle <= MAX_HOOD_ANGLE; hoodAngle += 5.0) {
+            double angleRad = Math.toRadians(hoodAngle);
+            
+            // Solve projectile motion equation for initial velocity
+            // y = x*tan(θ) - (g*x²)/(2*v₀²*cos²(θ))
+            double cosAngle = Math.cos(angleRad);
+            double tanAngle = Math.tan(angleRad);
+            
+            double denominator = 2 * cosAngle * cosAngle * (distance * tanAngle - heightDiff);
+            if (denominator <= 0) continue;
+            
+            double velocitySquared = (GRAVITY * distance * distance) / denominator;
+            if (velocitySquared < 0) continue;
+            
+            double requiredVelocity = Math.sqrt(velocitySquared);
+            
+            // Adjust for robot motion
+            double launchVelocity = requiredVelocity - robotSpeed * Math.cos(angleRad);
+            if (launchVelocity < 0) continue;
+            
+            // Check if achievable
+            double rpm = velocityToRPM(launchVelocity / LAUNCH_EFFICIENCY);
+            if (rpm > MAX_FLYWHEEL_RPM) continue;
+            
+            // Calculate flight time
+            double flightTime = distance / (requiredVelocity * cosAngle);
+            
+            // We found at least one valid solution
+            validSolutionCount++;
+            foundValidSolution = true;
+            
+            // Prefer minimum velocity (most efficient)
+            if (launchVelocity < bestVelocity) {
+                bestVelocity = launchVelocity;
+                bestHoodAngle = hoodAngle;
+                bestFlightTime = flightTime;
+            }
         }
         
-        String side = turretOnLeft ? "Left" : "Right";
-        Logger.recordOutput("AimingCalculator/" + side + "/CanReachAngle", canReach);
+        // Log solution search results
+        Logger.recordOutput("Aiming/TrajectorySearch/ValidSolutionsFound", validSolutionCount);
+        Logger.recordOutput("Aiming/TrajectorySearch/SearchedAngles", (int)((MAX_HOOD_ANGLE - MIN_HOOD_ANGLE) / 5.0) + 1);
         
-        return canReach;
+        // If no solution found, use fallback
+        if (!foundValidSolution) {
+            Logger.recordOutput("Aiming/TrajectorySearch/FallbackReason", 
+                distance < 2.0 ? "TooClose" : 
+                distance > 5.0 ? "TooFar" : "NoPhysicsSolution");
+            
+            // Distance-based interpolation
+            if (distance < 2.0) {
+                bestHoodAngle = MIN_HOOD_ANGLE;
+            } else if (distance > 5.0) {
+                bestHoodAngle = MAX_HOOD_ANGLE;
+            } else {
+                double t = (distance - 2.0) / 3.0;
+                bestHoodAngle = MIN_HOOD_ANGLE + t * (MAX_HOOD_ANGLE - MIN_HOOD_ANGLE);
+            }
+            
+            // Use max velocity
+            bestVelocity = rpmToVelocity(MAX_FLYWHEEL_RPM) * LAUNCH_EFFICIENCY;
+            bestFlightTime = distance / (bestVelocity * Math.cos(Math.toRadians(bestHoodAngle)));
+        }
+        
+        return new TrajectoryResult(
+            bestHoodAngle,
+            bestVelocity / LAUNCH_EFFICIENCY, // Account for efficiency
+            bestFlightTime,
+            foundValidSolution
+        );
+    }
+    
+    /**
+     * Calculate turret angle with lead compensation
+     */
+    private static double calculateTurretAngle(
+            Pose2d robotPose,
+            ChassisSpeeds robotVelocity,
+            Translation2d turretPosition,
+            Translation2d targetPosition,
+            double flightTime,
+            boolean isLeftTurret) {
+        
+        // Predict future robot position
+        double futureX = robotPose.getX() + robotVelocity.vxMetersPerSecond * flightTime;
+        double futureY = robotPose.getY() + robotVelocity.vyMetersPerSecond * flightTime;
+        double futureHeading = robotPose.getRotation().getRadians() + 
+                              robotVelocity.omegaRadiansPerSecond * flightTime;
+        
+        // Get turret offset and rotate to future orientation
+        Translation3d turret3d = isLeftTurret ? LEFT_TURRET_POSITION : RIGHT_TURRET_POSITION;
+        Translation2d turretOffset = new Translation2d(turret3d.getX(), turret3d.getY());
+        Translation2d futureOffset = turretOffset.rotateBy(new Rotation2d(futureHeading));
+        
+        // Future turret position
+        Translation2d futureTurretPos = new Translation2d(futureX, futureY).plus(futureOffset);
+        
+        // Calculate angle from future turret to target
+        Translation2d toTarget = targetPosition.minus(futureTurretPos);
+        double fieldAngle = Math.atan2(toTarget.getY(), toTarget.getX());
+        
+        // Convert to robot-relative angle
+        double robotRelativeAngle = Math.toDegrees(fieldAngle - futureHeading);
+        
+        // Normalize to [-180, 180]
+        while (robotRelativeAngle > 180) robotRelativeAngle -= 360;
+        while (robotRelativeAngle < -180) robotRelativeAngle += 360;
+        
+        return robotRelativeAngle;
+    }
+    
+    /**
+     * Check if turret can reach the calculated angle
+     */
+    private static boolean isAngleReachable(double angle, boolean isLeftTurret) {
+        if (isLeftTurret) {
+            // Handle wraparound for left turret (-240 to 45)
+            if (angle >= LEFT_TURRET_MIN && angle <= LEFT_TURRET_MAX) return true;
+            if (angle >= LEFT_TURRET_MIN + 360) return true;
+            return false;
+        } else {
+            // Handle wraparound for right turret (-45 to 240)
+            if (angle >= RIGHT_TURRET_MIN && angle <= RIGHT_TURRET_MAX) return true;
+            if (angle <= RIGHT_TURRET_MAX - 360) return true;
+            return false;
+        }
     }
     
     /**
      * Clamp turret angle to valid range
-     * @param turretAngle The desired turret angle
-     * @param turretOnLeft Whether this is the left turret
-     * @return The clamped angle within valid range
      */
-    public static double clampTurretAngle(double turretAngle, boolean turretOnLeft) {
-        double clampedAngle;
-        if (turretOnLeft) {
-            clampedAngle = Math.max(LEFT_TURRET_MIN_ANGLE, Math.min(LEFT_TURRET_MAX_ANGLE, turretAngle));
+    private static double clampTurretAngle(double angle, boolean isLeftTurret) {
+        if (isLeftTurret) {
+            // Find closest valid angle
+            if (angle > LEFT_TURRET_MAX && angle < LEFT_TURRET_MIN + 360) {
+                // In the dead zone, choose closest edge
+                double distToMax = Math.abs(angle - LEFT_TURRET_MAX);
+                double distToMin = Math.abs(angle - (LEFT_TURRET_MIN + 360));
+                return distToMax < distToMin ? LEFT_TURRET_MAX : LEFT_TURRET_MIN;
+            }
         } else {
-            clampedAngle = Math.max(RIGHT_TURRET_MIN_ANGLE, Math.min(RIGHT_TURRET_MAX_ANGLE, turretAngle));
+            // Find closest valid angle for right turret
+            if (angle < RIGHT_TURRET_MIN || angle > RIGHT_TURRET_MAX) {
+                // In the dead zone, choose closest edge
+                double distToMin = Math.abs(angle - RIGHT_TURRET_MIN);
+                double distToMax = Math.abs(angle - RIGHT_TURRET_MAX);
+                return distToMin < distToMax ? RIGHT_TURRET_MIN : RIGHT_TURRET_MAX;
+            }
         }
-        
-        String side = turretOnLeft ? "Left" : "Right";
-        Logger.recordOutput("AimingCalculator/" + side + "/ClampedAngle", clampedAngle);
-        
-        return clampedAngle;
-    }
-    
-    /**
-     * Calculate distance to a target
-     */
-    public static double calculateDistance(Pose2d robotPose, Translation2d targetPosition) {
-        double distance = robotPose.getTranslation().getDistance(targetPosition);
-        Logger.recordOutput("AimingCalculator/DistanceToTarget", distance);
-        return distance;
-    }
-    
-    /**
-     * Get the target tower position based on alliance
-     * @param targetOwnGoal If true, targets own alliance's goal; if false, targets opponent's
-     */
-    public static Translation2d getTargetTowerPosition() {
-        var alliance = DriverStation.getAlliance();
-        boolean isBlue = alliance.isPresent() && alliance.get() == Alliance.Blue;
-        
-        Translation2d position = isBlue ? ShooterConstants.BLUE_HUB_POSITION : ShooterConstants.RED_HUB_POSITION;
-        
-        Logger.recordOutput("AimingCalculator/Alliance", isBlue ? "Blue" : "Red");
-        Logger.recordOutput("AimingCalculator/TargetTowerX", position.getX());
-        Logger.recordOutput("AimingCalculator/TargetTowerY", position.getY());
-        
-        return position;
-    }
-    
-    /**
-     * Get the driver station position for shooting back
-     */
-    public static Translation2d getDriverStationPosition() {
-        var alliance = DriverStation.getAlliance();
-        boolean isBlue = alliance.isPresent() && alliance.get() == Alliance.Blue;
-        
-        Translation2d position = isBlue ? ShooterConstants.BLUE_DRIVER_STATION : ShooterConstants.RED_DRIVER_STATION;
-        
-        Logger.recordOutput("AimingCalculator/DriverStationX", position.getX());
-        Logger.recordOutput("AimingCalculator/DriverStationY", position.getY());
-        
-        return position;
-    }
-    
-    /**
-     * Calculate hood angle based on distance
-     */
-    public static double calculateHoodAngle(double distanceMeters) {
-        double angle = ShooterConstants.getHoodAngleForDistance(distanceMeters);
-        Logger.recordOutput("AimingCalculator/HoodAngle", angle);
         return angle;
     }
     
     /**
-     * Calculate flywheel RPM based on distance
+     * Convert velocity to flywheel RPM
      */
-    public static double calculateFlywheelRPM(double distanceMeters) {
-        double rpm = ShooterConstants.getFlywheelRPMForDistance(distanceMeters);
-        Logger.recordOutput("AimingCalculator/FlywheelRPM", rpm);
-        return rpm;
+    private static double velocityToRPM(double velocity) {
+        double angularVelocity = velocity / FLYWHEEL_RADIUS;
+        return angularVelocity * 60.0 / (2 * Math.PI);
     }
     
     /**
-     * Normalize angle to [-180, 180] degrees
+     * Convert RPM to exit velocity
      */
-    private static double normalizeAngle(double angleDegrees) {
-        while (angleDegrees > 180) angleDegrees -= 360;
-        while (angleDegrees < -180) angleDegrees += 360;
-        return angleDegrees;
+    private static double rpmToVelocity(double rpm) {
+        double angularVelocity = rpm * 2 * Math.PI / 60.0;
+        return angularVelocity * FLYWHEEL_RADIUS;
     }
     
     /**
-     * Calculate all aiming parameters for shooting at a target
+     * Get target tower position based on alliance
      */
-    public static AimingParameters calculateAimingParameters(
-            Pose2d robotPose, 
-            Translation2d targetPosition, 
-            boolean turretOnLeft) {
-        
-        String side = turretOnLeft ? "Left" : "Right";
-        
-        // Log input parameters
-        Logger.recordOutput("AimingCalculator/" + side + "/RobotPose", robotPose);
-        Logger.recordOutput("AimingCalculator/" + side + "/TargetPosition", new Pose2d(targetPosition, new edu.wpi.first.math.geometry.Rotation2d()));
-        
-        double distance = calculateDistance(robotPose, targetPosition);
-        double turretAngle = calculateTurretAngle(robotPose, targetPosition, turretOnLeft);
-        boolean canReach = canTurretReachAngle(turretAngle, turretOnLeft);
-        
-        // Clamp to valid range if out of bounds
-        double clampedAngle = clampTurretAngle(turretAngle, turretOnLeft);
-        
-        double hoodAngle = calculateHoodAngle(distance);
-        double flywheelRPM = calculateFlywheelRPM(distance);
-        
-        // Log output parameters
-        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/TurretAngle", clampedAngle);
-        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/HoodAngle", hoodAngle);
-        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/FlywheelRPM", flywheelRPM);
-        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/Distance", distance);
-        Logger.recordOutput("AimingCalculator/" + side + "/Parameters/CanReach", canReach);
-        
-        return new AimingParameters(clampedAngle, hoodAngle, flywheelRPM, distance, canReach);
+    public static Translation2d getTargetTowerPosition() {
+        var alliance = DriverStation.getAlliance();
+        boolean isBlue = alliance.isPresent() && alliance.get() == Alliance.Blue;
+        return isBlue ? ShooterConstants.BLUE_HUB_POSITION : ShooterConstants.RED_HUB_POSITION;
     }
     
     /**
-     * Container for all aiming parameters
+     * Get driver station position for shooting back
      */
+    public static Translation2d getDriverStationPosition() {
+        var alliance = DriverStation.getAlliance();
+        boolean isBlue = alliance.isPresent() && alliance.get() == Alliance.Blue;
+        return isBlue ? ShooterConstants.BLUE_DRIVER_STATION : ShooterConstants.RED_DRIVER_STATION;
+    }
+    
+    // Helper classes
+    private static record TrajectoryResult(
+        double hoodAngle,
+        double launchVelocity,
+        double flightTime,
+        boolean isValidSolution
+    ) {}
+    
     public static record AimingParameters(
-            double turretAngleDegrees,
-            double hoodAngleDegrees,
-            double flywheelRPM,
-            double distanceMeters,
-            boolean canReachTarget) {}
+        double turretAngleDegrees,
+        double hoodAngleDegrees,
+        double flywheelRPM,
+        double distanceMeters,
+        boolean canReachTarget
+    ) {}
 }

@@ -24,10 +24,10 @@ public class DriveIOSparkMax implements DriveIO {
     
     @SuppressWarnings("removal") // Surpress warnings for deprecated ResetMode and PersistMode usage
     public DriveIOSparkMax() {
-        frontLeft = new SparkMax(FRONT_LEFT_ID, MotorType.kBrushed);
-        frontRight = new SparkMax(FRONT_RIGHT_ID, MotorType.kBrushed);
-        rearLeft = new SparkMax(REAR_LEFT_ID, MotorType.kBrushed);
-        rearRight = new SparkMax(REAR_RIGHT_ID, MotorType.kBrushed);
+        frontLeft = new SparkMax(FRONT_LEFT_ID, MotorType.kBrushless);
+        frontRight = new SparkMax(FRONT_RIGHT_ID, MotorType.kBrushless);
+        rearLeft = new SparkMax(REAR_LEFT_ID, MotorType.kBrushless);
+        rearRight = new SparkMax(REAR_RIGHT_ID, MotorType.kBrushless);
         
         // Configure motors
         frontLeft.configure(configureMotor(false), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);

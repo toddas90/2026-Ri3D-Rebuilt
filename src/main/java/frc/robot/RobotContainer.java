@@ -125,8 +125,9 @@ public class RobotContainer {
             m_rightTurret,
             m_drive::getPose,
             AimingCalculator::getDriverStationPosition,
+            m_drive::getChassisSpeeds,
             "DriverStation",
-            MAX_SHOOT_BACK_RPM
+            MAX_SHOOT_BACK_RPM // Limit RPM for gentler shot
         )
     );
     
@@ -137,6 +138,7 @@ public class RobotContainer {
             m_rightTurret,
             m_drive::getPose,
             AimingCalculator::getTargetTowerPosition,
+            m_drive::getChassisSpeeds,
             "Tower"
         )
     );
@@ -187,6 +189,7 @@ public class RobotContainer {
         m_rightTurret,
         m_drive::getPose,
         AimingCalculator::getTargetTowerPosition,
+        m_drive::getChassisSpeeds,  // Add velocity supplier
         "Tower",
         0.0  // maxRPM = 0 means no flywheel spin-up
     );

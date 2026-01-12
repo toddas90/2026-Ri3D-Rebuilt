@@ -248,4 +248,12 @@ public class Drive extends SubsystemBase {
     public ChassisSpeeds getVelocity() {
         return currentSpeeds;
     }
+    
+    /**
+     * Get the current robot chassis speeds
+     * @return Current ChassisSpeeds
+     */
+    public ChassisSpeeds getChassisSpeeds() {
+        return currentSpeeds;
+    }
 }
