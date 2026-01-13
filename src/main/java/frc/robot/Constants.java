@@ -201,10 +201,10 @@ public final class Constants {
     public static final double kPivotMaxAngle = 180.0; // degrees (full flip)
     
     // Lift PID
-    public static final double kLiftP = 3; // 20
+    public static final double kLiftP = 4; // 4
     public static final double kLiftI = 0.0; // 0
-    public static final double kLiftD = 0.1; // 0.1
-    public static final double kLiftFF = 0.0; // 0
+    public static final double kLiftD = 0.01; // 0.1
+    public static final double kLiftFF = 0.05; // 0
     
     // Pivot PID
     public static final double kPivotP = 0.02;
@@ -217,7 +217,7 @@ public final class Constants {
     public static final int kPivotCurrentLimit = 40; // amps
     
     // Control tolerances
-    public static final double kLiftPositionTolerance = 0.02; // meters
+    public static final double kLiftPositionTolerance = 0.5 * 0.0254; // inches to meters
     public static final double kPivotPositionTolerance = 2.0; // degrees
     
     // Safety limits
