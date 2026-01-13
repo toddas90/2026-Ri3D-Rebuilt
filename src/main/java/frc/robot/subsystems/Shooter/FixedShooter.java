@@ -10,7 +10,7 @@ public class FixedShooter extends SubsystemBase {
     private final FixedShooterIOInputsAutoLogged inputs = new FixedShooterIOInputsAutoLogged();
     
     // Fixed hood angle for simplified shooter
-    private static final double FIXED_HOOD_ANGLE = 45.0; // degrees
+    private static final double FIXED_HOOD_ANGLE = 75.0; // degrees
     private static final double MAX_VOLTAGE = 12.0;
     
     public FixedShooter(FixedShooterIO io) {
