@@ -80,18 +80,38 @@ public class Climb extends SubsystemBase {
     }
     
     /**
-     * Manually control lift with voltage
-     * @param voltage Voltage to apply (-12 to 12)
+     * Check if the lift is under load (robot is hanging)
+     * @return true if lift current indicates robot weight
      */
-    // public void setLiftVoltage(double voltage) {
-    //     // Apply safety limits
-    //     if ((inputs.liftBottomLimit && voltage < 0) || 
-    //         (inputs.liftTopLimit && voltage > 0)) {
-    //         io.setLiftVoltage(0.0);
-    //     } else {
-    //         io.setLiftVoltage(voltage);
-    //     }
-    // }
+    public boolean isHooked() {
+        // When lifting the robot, current will be significantly higher
+        return inputs.liftCurrentAmps > ClimbConstants.kLiftHookedCurrentThreshold;
+    }
+    
+    /**
+     * Set lift to a specific height with smart power management
+     * @param heightMeters Target height in meters
+     */
+    public void setLiftHeightSmart(double heightMeters) {
+        double clamped = MathUtil.clamp(
+            heightMeters,
+            ClimbConstants.kLiftMinHeight,
+            ClimbConstants.kLiftMaxHeight
+        );
+        
+        // If going down and not hooked, use reduced power
+        if (heightMeters < inputs.liftPositionMeters && !isHooked()) {
+            // Override with voltage control for gentle descent
+            io.setLiftVoltage(-4.8); // 40% of 12V
+        } else {
+            // Use normal position control (will use configured power limits)
+            io.setLiftPosition(clamped);
+        }
+    }
+
+    public void setLiftPositionSmart(LiftPosition position) {
+        setLiftHeightSmart(position.heightMeters);
+    }
     
     /**
      * Get current lift height

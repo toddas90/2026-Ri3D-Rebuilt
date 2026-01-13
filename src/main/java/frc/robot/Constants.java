@@ -222,5 +222,9 @@ public final class Constants {
     
     // Safety limits
     public static final double kMaxMotorTemp = 70.0; // Celsius
+
+    // Load detection
+    public static final double kLiftHookedCurrentThreshold = 20.0; // Amps
+    public static final double kLiftFreeDescentVoltage = -4.8; // 40% power down
   }
 }

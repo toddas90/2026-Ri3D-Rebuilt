@@ -223,7 +223,7 @@ public class RobotContainer {
     
     // D-Pad Down: Move lift to BOTTOM position
     m_operatorController.povDown().onTrue(
-        Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.STOWED), m_climb)
+        Commands.runOnce(() -> m_climb.setLiftPositionSmart(Climb.LiftPosition.STOWED), m_climb)
     );
     
     // B Button: Flip robot (toggle between NORMAL and FLIPPED)
