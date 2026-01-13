@@ -102,6 +102,9 @@ public final class Constants {
     // Mechanical ratios
     public static final double kFlywheelGearRatio = 3.0; // 3:1 gear ratio
 
+    // Fixed hood angle
+    public static final double kHoodAngle = 60.0; // degrees
+
     // Flywheel PID
     public static final double kFlywheelP = 0.04; // 0.01
     public static final double kFlywheelI = 0.0;

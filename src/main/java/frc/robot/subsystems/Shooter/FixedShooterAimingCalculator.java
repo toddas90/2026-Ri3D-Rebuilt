@@ -12,7 +12,7 @@ import org.littletonrobotics.junction.Logger;
 public class FixedShooterAimingCalculator {
     
     // Fixed hood angle for all shots
-    private static final double FIXED_HOOD_ANGLE = 45.0; // degrees
+    private static final double FIXED_HOOD_ANGLE = ShooterConstants.kHoodAngle; // degrees
     
     /**
      * Calculate robot rotation and flywheel speed for fixed shooter
