@@ -11,7 +11,6 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.wpilibj.DigitalInput;
 import frc.robot.Constants.ClimbConstants;
 
 public class ClimbIOSparkMax implements ClimbIO {
@@ -72,6 +71,9 @@ public class ClimbIOSparkMax implements ClimbIO {
         // Convert from rotations to meters
         config.encoder.positionConversionFactor(ClimbConstants.kLiftMetersPerRotation);
         config.encoder.velocityConversionFactor(ClimbConstants.kLiftMetersPerRotation / 60.0);
+        
+        // Asymmetric output limits - less power when going down
+        config.closedLoop.outputRange(-0.5, 1.0);  // Only 50% power when going down, full power up
         
         // Soft limits
         config.softLimit.forwardSoftLimit(ClimbConstants.kLiftMaxHeight);

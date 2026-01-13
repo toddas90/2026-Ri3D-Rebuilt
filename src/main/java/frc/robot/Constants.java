@@ -183,24 +183,28 @@ public final class Constants {
     // Mechanical configuration
     public static final double kLiftGearRatio = 25.0; // 25:1 reduction
     public static final double kPivotGearRatio = 150.0; // 150:1 reduction
-    public static final double kLiftDrumRadius = 0.0254; // 1" radius in meters
+    public static final double kLiftDrumDiameter = 2 * 0.0254; // 2" radius in meters
+    
+    // // Conversion factors (fixed calculation)
+    // public static final double kLiftMetersPerRotation = 2 * Math.PI * kLiftDrumRadius / kLiftGearRatio;
+    public static final double kPivotDegreesPerRotation = 360.0 / kPivotGearRatio;
     
     // Conversion factors (fixed calculation)
-    public static final double kLiftMetersPerRotation = 2 * Math.PI * kLiftDrumRadius * kLiftGearRatio;
-    public static final double kPivotDegreesPerRotation = 360.0 / kPivotGearRatio;
+    public static final double kLiftMetersPerRotation = 
+        (Math.PI * kLiftDrumDiameter) / kLiftGearRatio * 2.0;
     
     // Position limits
     public static final double kLiftMinHeight = 0.0; // meters
-    public static final double kLiftMaxHeight = 0.5; // meters
-    public static final double kLiftBarInsertHeight = 0.4; // meters
+    public static final double kLiftMaxHeight = 12 * 0.0254; // inches to meters
+    public static final double kLiftBarInsertHeight = 6 * 0.0254; // inches to meters
     public static final double kPivotMinAngle = 0.0; // degrees
     public static final double kPivotMaxAngle = 180.0; // degrees (full flip)
     
     // Lift PID
-    public static final double kLiftP = 20.0;
-    public static final double kLiftI = 0.0;
-    public static final double kLiftD = 0.1;
-    public static final double kLiftFF = 0.0;
+    public static final double kLiftP = 3; // 20
+    public static final double kLiftI = 0.0; // 0
+    public static final double kLiftD = 0.1; // 0.1
+    public static final double kLiftFF = 0.0; // 0
     
     // Pivot PID
     public static final double kPivotP = 0.02;
@@ -211,10 +215,6 @@ public final class Constants {
     // Current limits
     public static final int kLiftCurrentLimit = 40; // amps
     public static final int kPivotCurrentLimit = 40; // amps
-    
-    // Sensors
-    public static final int kLiftBottomLimitPort = 0; // Digital IO
-    public static final int kLiftTopLimitPort = 1;    // Digital IO
     
     // Control tolerances
     public static final double kLiftPositionTolerance = 0.02; // meters

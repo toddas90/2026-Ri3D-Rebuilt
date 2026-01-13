@@ -76,7 +76,7 @@ public class ClimbIOSim implements ClimbIO {
             DCMotor.getNEO(1),
             ClimbConstants.kLiftGearRatio,
             massKg,
-            ClimbConstants.kLiftDrumRadius,
+            ClimbConstants.kLiftDrumDiameter,
             ClimbConstants.kLiftMinHeight,
             ClimbConstants.kLiftMaxHeight,
             true, // Simulate gravity
