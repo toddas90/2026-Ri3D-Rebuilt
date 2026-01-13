@@ -102,7 +102,7 @@ public final class Constants {
   public static class ShooterConstants {
     // Motor CAN IDs
     public static final int kIndexerMotorId = 2;
-    public static final int kLeftFlywheelMotorId = 6;
+    public static final int kLeftFlywheelMotorId = 60;
     public static final int kRightFlywheelMotorId = 8;
     
     // Current limits

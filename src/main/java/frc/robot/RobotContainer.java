@@ -56,7 +56,7 @@ public class RobotContainer {
   private final Indexer m_indexer;
   private final Climb m_climb;
   private final FixedShooter m_fixedShooter;
-  private final Intake m_intake;
+  // private final Intake m_intake;
 
   // Controllers
   private final CommandXboxController m_driverController =
@@ -70,7 +70,7 @@ public class RobotContainer {
   private static final double DEADBAND = OperatorConstants.kControllerDeadband;
 
   // Add intake toggle command as a field to maintain state
-  private final IntakeToggleCommand intakeToggleCommand;
+  // private final IntakeToggleCommand intakeToggleCommand;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -85,7 +85,7 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIOSparkMax());
         m_climb = new Climb(new ClimbIOSparkMax());
         m_fixedShooter = new FixedShooter(new FixedShooterIOSparkMax());
-        m_intake = new Intake(new IntakeIOSparkMax());
+        // m_intake = new Intake(new IntakeIOSparkMax());
         break;
 
       case SIM:
@@ -104,7 +104,7 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIOSim());
         m_climb = new Climb(new ClimbIOSim());
         m_fixedShooter = new FixedShooter(new FixedShooterIOSim());
-        m_intake = new Intake(new IntakeIOSim());
+        // m_intake = new Intake(new IntakeIOSim());
         break;
 
       default:
@@ -113,11 +113,11 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIO() {});
         m_climb = new Climb(new ClimbIO() {});
         m_fixedShooter = new FixedShooter(new FixedShooterIO() {});
-        m_intake = new Intake(new IntakeIO() {});
+        // m_intake = new Intake(new IntakeIO() {});
     }
     
     // Initialize the intake toggle command after m_intake is created
-    intakeToggleCommand = new IntakeToggleCommand(m_intake);
+    // intakeToggleCommand = new IntakeToggleCommand(m_intake);
     
     // Configure the trigger bindings
     configureBindings();
@@ -170,7 +170,12 @@ public class RobotContainer {
 
     // Left Bumper: Simple shoot without aiming
     m_driverController.leftBumper().whileTrue(
-        new SimpleShootCommand(m_fixedShooter)
+        //new SimpleShootCommand(m_fixedShooter)
+        Commands.startEnd(
+            () -> m_fixedShooter.setFlywheelVelocity(Constants.ShooterConstants.kMaxFlywheelRPM),
+            () -> m_fixedShooter.stop(),
+            m_fixedShooter
+        )
     );
 
     // Right Bumper: Auto-aim and spin up
@@ -194,7 +199,7 @@ public class RobotContainer {
     // ==================== INTAKE CONTROLS ====================
     
     // A button: Toggle intake deploy/stow with roller control
-    m_driverController.a().onTrue(intakeToggleCommand);
+    // m_driverController.a().onTrue(intakeToggleCommand);
 
     // Right bumper: Deploy/retract hook
     m_driverController.rightBumper().onTrue(
@@ -211,7 +216,7 @@ public class RobotContainer {
     m_drive.setDefaultCommand(
         new FieldOrientedDriveCommand(
             m_drive,
-            () -> -m_driverController.getLeftY(),  // Forward/backward (inverted)
+            () -> m_driverController.getLeftY(),
             () -> m_driverController.getLeftX(),  // Left/right
             () -> -m_driverController.getRightX(), // Rotation (inverted)
             DEADBAND

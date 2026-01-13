@@ -53,7 +53,7 @@ public class FixedShooterIOSparkMax implements FixedShooterIO {
         SparkMaxConfig config = new SparkMaxConfig();
         config.idleMode(IdleMode.kCoast);
         config.smartCurrentLimit(ShooterConstants.kFlywheelCurrentLimit);
-        config.inverted(false);
+        config.inverted(true);
         
         config.encoder.velocityConversionFactor(1.0 / ShooterConstants.kFlywheelGearRatio);
         

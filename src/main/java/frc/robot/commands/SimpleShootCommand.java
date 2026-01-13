@@ -12,7 +12,7 @@ public class SimpleShootCommand extends Command {
     private final double targetRPM;
     
     // Default RPM for close-range shooting
-    private static final double DEFAULT_RPM = 4000.0;
+    private static final double DEFAULT_RPM = ShooterConstants.kMaxFlywheelRPM;
     
     public SimpleShootCommand(FixedShooter shooter) {
         this(shooter, DEFAULT_RPM);
