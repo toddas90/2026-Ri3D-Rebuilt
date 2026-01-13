@@ -211,5 +211,10 @@ public final class Constants {
     // Load detection
     public static final double kLiftHookedCurrentThreshold = 20.0; // Amps
     public static final double kLiftFreeDescentVoltage = -4.8; // 40% power down
+
+    // Servo configuration
+    public static final int kServoChannel = 0; // PWM channel
+    public static final double kServoStowedPosition = 0.0;
+    public static final double kServoDeployedPosition = 0.6;
   }
 }

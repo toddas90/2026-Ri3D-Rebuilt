@@ -34,6 +34,9 @@ public class ClimbIOSim implements ClimbIO {
     // Track current pivot angle to determine load
     private double currentPivotAngleDegrees = 0.0;
     
+    // Servo simulation
+    private double servoPosition = 0.0;
+    
     public ClimbIOSim() {
         // Initialize lift simulation with initial light load (just carriage)
         recreateLiftSim(LIFT_CARRIAGE_MASS_KG);
@@ -149,6 +152,9 @@ public class ClimbIOSim implements ClimbIO {
         inputs.pivotCurrentAmps = pivotSim.getCurrentDrawAmps();
         inputs.pivotTempCelsius = 30.0 + (inputs.pivotCurrentAmps * 0.5); // Simple temp model
         inputs.pivotSetpointDegrees = pivotSetpointDegrees != null ? pivotSetpointDegrees : inputs.pivotPositionDegrees;
+        
+        // Add servo position
+        inputs.servoPosition = servoPosition;
     }
     
     @Override
@@ -212,5 +218,17 @@ public class ClimbIOSim implements ClimbIO {
     private double getPivotVelocityDegreesPerSec() {
         // Convert rad/s to deg/s
         return Math.toDegrees(pivotSim.getAngularVelocityRadPerSec());
+    }
+    
+    @Override
+    public void setServoPosition(double position) {
+        servoPosition = MathUtil.clamp(position, 0.0, 1.0);
+    }
+    
+    @Override
+    public void setServoAngle(double angleDegrees) {
+        // Convert -90 to 90 degrees to 0.0 to 1.0 position
+        double position = (angleDegrees + 90.0) / 180.0;
+        setServoPosition(position);
     }
 }

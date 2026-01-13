@@ -20,6 +20,9 @@ public interface ClimbIO {
         public double pivotCurrentAmps = 0.0;
         public double pivotTempCelsius = 0.0;
         public double pivotSetpointDegrees = 0.0;
+
+        // Servo
+        public double servoPosition = 0.0;
     }
     
     /** Updates the set of loggable inputs */
@@ -45,4 +48,10 @@ public interface ClimbIO {
     
     /** Set whether brake mode is enabled */
     public default void setBrakeMode(boolean enabled) {}
+    
+    /** Set servo position (0.0 to 1.0) */
+    public default void setServoPosition(double position) {}
+    
+    /** Set servo angle in degrees (-90 to 90 for 180 degree servo) */
+    public default void setServoAngle(double angleDegrees) {}
 }

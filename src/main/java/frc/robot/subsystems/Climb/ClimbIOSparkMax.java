@@ -11,11 +11,13 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.Servo;
 import frc.robot.Constants.ClimbConstants;
 
 public class ClimbIOSparkMax implements ClimbIO {
     private final SparkMax liftMotor;
     private final SparkMax pivotMotor;
+    private final Servo hookServo;
     
     private final RelativeEncoder liftEncoder;
     private final RelativeEncoder pivotEncoder;
@@ -42,6 +44,10 @@ public class ClimbIOSparkMax implements ClimbIO {
         pivotMotor = new SparkMax(ClimbConstants.kPivotMotorId, MotorType.kBrushless);
         pivotEncoder = pivotMotor.getEncoder();
         pivotPID = pivotMotor.getClosedLoopController();
+        
+        // Initialize servo
+        hookServo = new Servo(ClimbConstants.kServoChannel);
+        hookServo.set(ClimbConstants.kServoStowedPosition); // Start stowed
         
         // Configure motors
         configureLiftMotor();
@@ -132,6 +138,9 @@ public class ClimbIOSparkMax implements ClimbIO {
         // Add setpoint tracking
         inputs.liftSetpointMeters = liftPositionMode ? liftSetpointMeters : inputs.liftPositionMeters;
         inputs.pivotSetpointDegrees = pivotPositionMode ? pivotSetpointDegrees : inputs.pivotPositionDegrees;
+        
+        // Add servo position
+        inputs.servoPosition = hookServo.get();
     }
     
     @Override
@@ -171,11 +180,24 @@ public class ClimbIOSparkMax implements ClimbIO {
     }
     
     @Override
+    public void setServoPosition(double position) {
+        hookServo.set(MathUtil.clamp(position, 0.0, 1.0));
+    }
+    
+    @Override
+    public void setServoAngle(double angleDegrees) {
+        // Convert -90 to 90 degrees to 0.0 to 1.0 position
+        double position = (angleDegrees + 90.0) / 180.0;
+        setServoPosition(position);
+    }
+    
+    @Override
     public void stop() {
         liftPositionMode = false;
         pivotPositionMode = false;
         liftMotor.stopMotor();
         pivotMotor.stopMotor();
+        // Don't change servo position on stop - it should hold
     }
     
     @Override

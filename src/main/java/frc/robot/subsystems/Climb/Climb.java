@@ -24,13 +24,24 @@ public class Climb extends SubsystemBase {
     }
     
     public enum PivotPosition {
-        NORMAL(0.0),
-        FLIPPED(180.0);
+        NORMAL(ClimbConstants.kPivotMinAngle),
+        FLIPPED(ClimbConstants.kPivotMaxAngle);
         
         public final double angleDegrees;
         
         PivotPosition(double angleDegrees) {
             this.angleDegrees = angleDegrees;
+        }
+    }
+    
+    public enum HookPosition {
+        STOWED(ClimbConstants.kServoStowedPosition),
+        DEPLOYED(ClimbConstants.kServoDeployedPosition);
+        
+        public final double servoPosition;
+        
+        HookPosition(double servoPosition) {
+            this.servoPosition = servoPosition;
         }
     }
     
@@ -178,6 +189,40 @@ public class Climb extends SubsystemBase {
     public boolean isPivotAtPosition(PivotPosition position) {
         return Math.abs(inputs.pivotPositionDegrees - position.angleDegrees) < 
                ClimbConstants.kPivotPositionTolerance;
+    }
+    
+    // ==================== Hook Control ====================
+    
+    /**
+     * Deploy or stow the hook
+     * @param position Hook position (STOWED or DEPLOYED)
+     */
+    public void setHookPosition(HookPosition position) {
+        io.setServoPosition(position.servoPosition);
+    }
+    
+    /**
+     * Set hook servo to specific position
+     * @param position Position from 0.0 (stowed) to 1.0 (deployed)
+     */
+    public void setHookServoPosition(double position) {
+        io.setServoPosition(position);
+    }
+    
+    /**
+     * Get current hook position
+     * @return Servo position (0.0 to 1.0)
+     */
+    public double getHookPosition() {
+        return inputs.servoPosition;
+    }
+    
+    /**
+     * Check if hook is deployed
+     * @return True if hook is in deployed position
+     */
+    public boolean isHookDeployed() {
+        return inputs.servoPosition > 0.9;
     }
     
     // ==================== General Control ====================

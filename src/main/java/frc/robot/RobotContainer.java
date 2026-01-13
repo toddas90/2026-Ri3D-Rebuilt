@@ -196,6 +196,14 @@ public class RobotContainer {
     // A button: Toggle intake deploy/stow with roller control
     m_driverController.a().onTrue(intakeToggleCommand);
 
+    // Right bumper: Deploy/retract hook
+    m_driverController.rightBumper().onTrue(
+        Commands.either(
+            Commands.runOnce(() -> m_climb.setHookPosition(Climb.HookPosition.STOWED), m_climb),
+            Commands.runOnce(() -> m_climb.setHookPosition(Climb.HookPosition.DEPLOYED), m_climb),
+            () -> m_climb.isHookDeployed()
+        )
+    );
   }
 
   private void configureDefaultCommands() {
