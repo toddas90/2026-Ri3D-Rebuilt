@@ -5,13 +5,13 @@
   - Built-in NEO relative encoder for position feedback
   - Current limiting for stall protection
   
-- **Roller Motor**: TBD for intaking game pieces (Write for sparks and talons)
+- **Roller Motor**: TBD for intaking game pieces (Might be window???)
   - Simple voltage control
 
 ## Software Architecture
 Following AdvantageKit IO pattern:
 - `IntakeIO` interface with AutoLog inputs
-- `IntakeIOSparkMax` for real hardware (might be talon, victor, etc)
+- `IntakeIOSparkMax` for real hardware
 - `IntakeIOSim` for simulation
 - `Intake` subsystem class
 
