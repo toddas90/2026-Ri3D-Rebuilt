@@ -22,7 +22,7 @@ public class AutoAimCommand extends Command {
     private final Supplier<Translation2d> targetSupplier;
     private final PIDController rotationController;
     
-    private static final double ROTATION_kP = 0.1;
+    private static final double ROTATION_kP = 0.25;
     private static final double ROTATION_kI = 0.0;
     private static final double ROTATION_kD = 0.01;
     private static final double MAX_ROTATION_SPEED = 3.0; // rad/s
@@ -75,8 +75,9 @@ public class AutoAimCommand extends Command {
     
     @Override
     public void end(boolean interrupted) {
-        // Stop rotating but keep flywheels spinning
+        // Stop rotating and stop flywheels
         drive.driveFieldOriented(0, 0, 0);
+        shooter.stop();  // Add this line to stop flywheels
     }
     
     @Override

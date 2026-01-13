@@ -8,6 +8,7 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.ShooterConstants;
 import frc.robot.commands.AutoAimCommand;
 import frc.robot.commands.FieldOrientedDriveCommand;
+import frc.robot.commands.SimpleShootCommand;
 import frc.robot.subsystems.Climb.Climb;
 import frc.robot.subsystems.Climb.ClimbIO;
 import frc.robot.subsystems.Climb.ClimbIOSim;
@@ -119,22 +120,22 @@ public class RobotContainer {
     // ==================== LIFT CONTROLS ====================
     
     // D-Pad Up: Move lift to TOP position
-    m_operatorController.povUp().onTrue(
+    m_driverController.povUp().onTrue(
         Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.EXTENDED), m_climb)
     );
     
     // D-Pad Right: Move lift to MIDDLE position for bar insertion
-    m_operatorController.povRight().onTrue(
+    m_driverController.povRight().onTrue(
         Commands.runOnce(() -> m_climb.setLiftPosition(Climb.LiftPosition.BAR_INSERT), m_climb)
     );
     
     // D-Pad Down: Move lift to BOTTOM position
-    m_operatorController.povDown().onTrue(
+    m_driverController.povDown().onTrue(
         Commands.runOnce(() -> m_climb.setLiftPositionSmart(Climb.LiftPosition.STOWED), m_climb)
     );
     
     // B Button: Flip robot (toggle between NORMAL and FLIPPED)
-    m_operatorController.b().onTrue(
+    m_driverController.b().onTrue(
         Commands.either(
             Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.NORMAL), m_climb),
             Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.FLIPPED), m_climb),
@@ -143,15 +144,20 @@ public class RobotContainer {
     );
     
     // Back button: Emergency stop for climb
-    m_operatorController.back().onTrue(
+    m_driverController.back().onTrue(
         Commands.runOnce(() -> {
             m_climb.stop();
             m_climb.setBrakeMode(true);
         }, m_climb)
     );
 
-    // Y button: Auto-aim and spin up
-    m_operatorController.y().whileTrue(
+    // Left Bumper: Simple shoot without aiming
+    m_driverController.leftBumper().whileTrue(
+        new SimpleShootCommand(m_fixedShooter)
+    );
+
+    // Right Bumper: Auto-aim and spin up
+    m_driverController.rightBumper().whileTrue(
         new AutoAimCommand(
             m_drive,
             m_fixedShooter,
@@ -160,7 +166,7 @@ public class RobotContainer {
     );
 
     // X button: Fire (with indexer)
-    m_operatorController.x().whileTrue(
+    m_driverController.x().whileTrue(
         Commands.startEnd(
             () -> m_indexer.start(),
             () -> m_indexer.stop(),
