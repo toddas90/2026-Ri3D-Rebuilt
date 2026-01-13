@@ -34,8 +34,8 @@ public class Turret extends SubsystemBase {
         // Logger.recordOutput("Shooter/" + name + "/HoodCurrent", inputs.hoodCurrent);
         
         // Log additional data
-        Logger.recordOutput("Shooter/" + name + "/FlywheelVelocityRPM", inputs.flywheelVelocityRPM);
-        Logger.recordOutput("Shooter/" + name + "/FlywheelTargetRPM", inputs.flywheelTargetRPM);
+        Logger.recordOutput("Shooter/" + name + "/MotorVelocityRPM", inputs.flywheelVelocityRPM);
+        Logger.recordOutput("Shooter/" + name + "/MotorTargetRPM", inputs.flywheelTargetRPM);
     }
 
     // ==================== Turret Control ====================

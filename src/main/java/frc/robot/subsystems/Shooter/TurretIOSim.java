@@ -22,7 +22,7 @@ public class TurretIOSim implements TurretIO {
 
     // Robot constants for simulation
     private static final double TURRET_GEAR_RATIO = 50.0; // 50:1 gear ratio
-    private static final double FLYWHEEL_GEAR_RATIO = 1.0; // Direct drive
+    private static final double FLYWHEEL_GEAR_RATIO = 3.0; // Direct drive
     
     private static final double TURRET_MOI = 0.01; // Moment of inertia (kg*m^2)
     private static final double FLYWHEEL_MOI = 0.001;
@@ -52,8 +52,8 @@ public class TurretIOSim implements TurretIO {
             DCMotor.getNEO(1)
         );
         flywheelMotor = new DCMotorSim(
-            LinearSystemId.createDCMotorSystem(DCMotor.getNEO(1), FLYWHEEL_MOI, FLYWHEEL_GEAR_RATIO),
-            DCMotor.getNEO(1)
+            LinearSystemId.createDCMotorSystem(DCMotor.getNeo550(1), FLYWHEEL_MOI, FLYWHEEL_GEAR_RATIO),
+            DCMotor.getNeo550(1)
         );
         
         // Initialize PID controller for turret position control

@@ -116,7 +116,7 @@ public final class Constants {
     public static final double kTurretD = 0.01;
 
     // Flywheel PID
-    public static final double kFlywheelP = 0.075;
+    public static final double kFlywheelP = 10;
     public static final double kFlywheelI = 0.0;
     public static final double kFlywheelD = 0.0;
     public static final double kFlywheelFF = 0.000175; // Feedforward (V per RPM)
@@ -182,7 +182,7 @@ public final class Constants {
     
     // Mechanical configuration
     public static final double kLiftGearRatio = 25.0; // 25:1 reduction
-    public static final double kPivotGearRatio = 100.0; // 100:1 reduction
+    public static final double kPivotGearRatio = 150.0; // 150:1 reduction
     public static final double kLiftDrumRadius = 0.0254; // 1" radius in meters
     
     // Conversion factors (fixed calculation)

@@ -94,7 +94,7 @@ public class AimingCalculator {
         return new AimingParameters(
             turretAngle,
             trajectory.hoodAngle,
-            flywheelRPM,
+            actualFlywheelRPM,
             horizontalDistance,
             canReach
         );
