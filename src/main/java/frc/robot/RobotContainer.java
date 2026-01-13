@@ -6,10 +6,8 @@ package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.ShooterConstants;
-import frc.robot.commands.AimAtTargetCommand;
+import frc.robot.commands.AutoAimCommand;
 import frc.robot.commands.FieldOrientedDriveCommand;
-import frc.robot.commands.ManualShootCommand;
-import frc.robot.commands.ManualTurretAimCommand;
 import frc.robot.subsystems.Climb.Climb;
 import frc.robot.subsystems.Climb.ClimbIO;
 import frc.robot.subsystems.Climb.ClimbIOSim;
@@ -25,15 +23,15 @@ import frc.robot.subsystems.Vision.Vision;
 import frc.robot.subsystems.Vision.VisionIOPhotonVision;
 import frc.robot.subsystems.Vision.VisionIOPhotonVisionSim;
 import frc.robot.subsystems.Vision.VisionConstants;
-import frc.robot.subsystems.Shooter.Turret;
-import frc.robot.subsystems.Shooter.TurretIO;
-import frc.robot.subsystems.Shooter.TurretIOSim;
 import frc.robot.subsystems.Shooter.Indexer;
 import frc.robot.subsystems.Shooter.IndexerIO;
 import frc.robot.subsystems.Shooter.IndexerIOSim;
 import frc.robot.subsystems.Shooter.IndexerIOSparkMax;
-import frc.robot.subsystems.Shooter.TurretIOSparkMax;
-import frc.robot.subsystems.Shooter.AimingCalculator;
+import frc.robot.subsystems.Shooter.FixedShooter;
+import frc.robot.subsystems.Shooter.FixedShooterAimingCalculator;
+import frc.robot.subsystems.Shooter.FixedShooterIO;
+import frc.robot.subsystems.Shooter.FixedShooterIOSparkMax;
+import frc.robot.subsystems.Shooter.FixedShooterIOSim;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -50,10 +48,9 @@ public class RobotContainer {
   private final Drive m_drive;
   private final Vision m_vision;
 
-  private final Turret m_leftTurret;
-  private final Turret m_rightTurret;
   private final Indexer m_indexer;
   private final Climb m_climb;
+  private final FixedShooter m_fixedShooter;
 
   // Controllers
   private final CommandXboxController m_driverController =
@@ -77,9 +74,8 @@ public class RobotContainer {
             new VisionIOPhotonVision(VisionConstants.camera1Name, VisionConstants.robotToCamera1)
         );
         m_indexer = new Indexer(new IndexerIOSparkMax());
-        m_leftTurret = new Turret(new TurretIOSparkMax(), "LeftTurret");
-        m_rightTurret = new Turret(new TurretIOSparkMax(), "RightTurret");
         m_climb = new Climb(new ClimbIOSparkMax());
+        m_fixedShooter = new FixedShooter(new FixedShooterIOSparkMax());
         break;
 
       case SIM:
@@ -96,18 +92,16 @@ public class RobotContainer {
                 m_drive::getPose)
         );
         m_indexer = new Indexer(new IndexerIOSim());
-        m_leftTurret = new Turret(new TurretIOSim(), "LeftTurret");
-        m_rightTurret = new Turret(new TurretIOSim(), "RightTurret");
         m_climb = new Climb(new ClimbIOSim());
+        m_fixedShooter = new FixedShooter(new FixedShooterIOSim());
         break;
 
       default:
         m_drive = new Drive(new DriveIO() {}, new GyroIO() {});
         m_vision = new Vision(m_drive::addVisionMeasurement);
         m_indexer = new Indexer(new IndexerIO() {});
-        m_leftTurret = new Turret(new TurretIO() {}, "LeftTurret");
-        m_rightTurret = new Turret(new TurretIO() {}, "RightTurret");
         m_climb = new Climb(new ClimbIO() {});
+        m_fixedShooter = new FixedShooter(new FixedShooterIO() {});
     }
     
     // Configure the trigger bindings
@@ -121,93 +115,6 @@ public class RobotContainer {
     // Driver Controller bindings
     // Reset gyro with Start button
     m_driverController.start().onTrue(Commands.runOnce(() -> m_drive.resetGyro()));
-
-    // ==================== SHOOTING CONTROLS ====================
-    
-    // A Button held: Fire at hub with auto-aim (spin up and shoot)
-    m_operatorController.a().whileTrue(
-        Commands.parallel(
-            new AimAtTargetCommand(
-                m_leftTurret,
-                m_rightTurret,
-                m_drive::getPose,
-                AimingCalculator::getTargetTowerPosition,
-                m_drive::getChassisSpeeds,
-                "HubShoot",
-                ShooterConstants.kMaxFlywheelRPM  // Spin up flywheels
-            ),
-            Commands.startEnd(
-                () -> m_indexer.start(),
-                () -> m_indexer.stop(),
-                m_indexer
-            )
-        )
-    );
-
-    // Manual control with left stick - fixed hood at 45°, max velocity, WITH INDEXER
-    Command leftManualControl = Commands.parallel(
-        Commands.run(() -> {
-            double x = m_operatorController.getLeftX();
-            double y = -m_operatorController.getLeftY();
-            double magnitude = Math.sqrt(x * x + y * y);
-            
-            if (magnitude > 0.5) {  // Deadband
-                double angle = Math.toDegrees(Math.atan2(y, x));
-                m_leftTurret.prepareShotVelocity(
-                    angle,
-                    45.0,  // Fixed 45° hood angle
-                    ShooterConstants.kMaxFlywheelRPM
-                );
-            } else {
-                // Stop when stick released
-                m_leftTurret.stopFlywheel();
-            }
-        }, m_leftTurret),
-        Commands.startEnd(
-            () -> m_indexer.start(),
-            () -> m_indexer.stop(),
-            m_indexer
-        )
-    ).withName("LeftManualAim");
-    
-    // Right stick manual control - fixed hood at 45°, max velocity, WITH INDEXER
-    Command rightManualControl = Commands.parallel(
-        Commands.run(() -> {
-            double x = m_operatorController.getRightX();
-            double y = -m_operatorController.getRightY();
-            double magnitude = Math.sqrt(x * x + y * y);
-            
-            if (magnitude > 0.5) {  // Deadband
-                double angle = Math.toDegrees(Math.atan2(y, x));
-                m_rightTurret.prepareShotVelocity(
-                    angle,
-                    45.0,  // Fixed 45° hood angle
-                    ShooterConstants.kMaxFlywheelRPM
-                );
-            } else {
-                // Stop when stick released
-                m_rightTurret.stopFlywheel();
-            }
-        }, m_rightTurret),
-        Commands.startEnd(
-            () -> m_indexer.start(),
-            () -> m_indexer.stop(),
-            m_indexer
-        )
-    ).withName("RightManualAim");
-    
-    // Bind manual controls - these will interrupt the default command when active
-    m_operatorController.axisGreaterThan(XboxController.Axis.kLeftX.value, 0.5)
-        .or(m_operatorController.axisLessThan(XboxController.Axis.kLeftX.value, -0.5))
-        .or(m_operatorController.axisGreaterThan(XboxController.Axis.kLeftY.value, 0.5))
-        .or(m_operatorController.axisLessThan(XboxController.Axis.kLeftY.value, -0.5))
-        .whileTrue(leftManualControl);
-        
-    m_operatorController.axisGreaterThan(XboxController.Axis.kRightX.value, 0.5)
-        .or(m_operatorController.axisLessThan(XboxController.Axis.kRightX.value, -0.5))
-        .or(m_operatorController.axisGreaterThan(XboxController.Axis.kRightY.value, 0.5))
-        .or(m_operatorController.axisLessThan(XboxController.Axis.kRightY.value, -0.5))
-        .whileTrue(rightManualControl);
     
     // ==================== LIFT CONTROLS ====================
     
@@ -242,7 +149,25 @@ public class RobotContainer {
             m_climb.setBrakeMode(true);
         }, m_climb)
     );
-}
+
+    // Y button: Auto-aim and spin up
+    m_operatorController.y().whileTrue(
+        new AutoAimCommand(
+            m_drive,
+            m_fixedShooter,
+            FixedShooterAimingCalculator::getTargetPosition
+        )
+    );
+
+    // X button: Fire (with indexer)
+    m_operatorController.x().whileTrue(
+        Commands.startEnd(
+            () -> m_indexer.start(),
+            () -> m_indexer.stop(),
+            m_indexer
+        )
+    );
+  }
 
   private void configureDefaultCommands() {
     // Set default command for drive to field-oriented control
@@ -250,23 +175,11 @@ public class RobotContainer {
         new FieldOrientedDriveCommand(
             m_drive,
             () -> -m_driverController.getLeftY(),  // Forward/backward (inverted)
-            () -> -m_driverController.getLeftX(),  // Left/right (inverted)
+            () -> m_driverController.getLeftX(),  // Left/right (inverted)
             () -> -m_driverController.getRightX(), // Rotation (inverted) ?????
             DEADBAND
         )
     );
-    
-    // Default command for turrets: continuously aim at hub WITHOUT spinning flywheels
-    Command aimAtHubCommand = new AimAtTargetCommand(
-        m_leftTurret,
-        m_rightTurret,
-        m_drive::getPose,
-        AimingCalculator::getTargetTowerPosition,
-        m_drive::getChassisSpeeds,  // Add velocity supplier
-        "Hub",
-        0.0  // maxRPM = 0 means no flywheel spin-up
-    );
-    m_leftTurret.setDefaultCommand(aimAtHubCommand);
   }
 
   /**
