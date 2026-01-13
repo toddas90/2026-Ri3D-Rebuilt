@@ -13,7 +13,7 @@ public class IndexerIOSparkMax implements IndexerIO {
 
     @SuppressWarnings("removal") // Suppress warnings for deprecated ResetMode and PersistMode
     public IndexerIOSparkMax() {
-        indexerMotor = new SparkMax(ShooterConstants.kIndexerMotorId, SparkMax.MotorType.kBrushed);
+        indexerMotor = new SparkMax(ShooterConstants.kIndexerMotorId, SparkMax.MotorType.kBrushless);
 
         indexerMotor.configure(configureMotor(false), 
             SparkMax.ResetMode.kResetSafeParameters, 

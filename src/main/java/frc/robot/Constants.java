@@ -90,12 +90,12 @@ public final class Constants {
 
   public static class ShooterConstants {
     // Motor CAN IDs
-    public static final int kIndexerMotorId = 5;
+    public static final int kIndexerMotorId = 2;
     public static final int kTurretMotorId = 6;
     public static final int kFlywheelMotorId = 8;
     
     // Current limits
-    public static final int kIndexerCurrentLimit = 20; // Amps
+    public static final int kIndexerCurrentLimit = 30; // Amps
     public static final int kTurretCurrentLimit = 30; // Amps
     public static final int kFlywheelCurrentLimit = 40; // Amps
     
