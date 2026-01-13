@@ -5,7 +5,6 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.Constants.ShooterConstants;
 import frc.robot.commands.AutoAimCommand;
 import frc.robot.commands.FieldOrientedDriveCommand;
 import frc.robot.commands.SimpleShootCommand;
@@ -33,7 +32,6 @@ import frc.robot.subsystems.Shooter.FixedShooterAimingCalculator;
 import frc.robot.subsystems.Shooter.FixedShooterIO;
 import frc.robot.subsystems.Shooter.FixedShooterIOSparkMax;
 import frc.robot.subsystems.Shooter.FixedShooterIOSim;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -58,8 +56,8 @@ public class RobotContainer {
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
   
   // Add operator controller on port 1
-  private final CommandXboxController m_operatorController =
-      new CommandXboxController(OperatorConstants.kOperatorControllerPort);
+//   private final CommandXboxController m_operatorController =
+//       new CommandXboxController(OperatorConstants.kOperatorControllerPort);
 
   // Deadband for joystick inputs
   private static final double DEADBAND = OperatorConstants.kControllerDeadband;
@@ -181,8 +179,8 @@ public class RobotContainer {
         new FieldOrientedDriveCommand(
             m_drive,
             () -> -m_driverController.getLeftY(),  // Forward/backward (inverted)
-            () -> m_driverController.getLeftX(),  // Left/right (inverted)
-            () -> -m_driverController.getRightX(), // Rotation (inverted) ?????
+            () -> m_driverController.getLeftX(),  // Left/right
+            () -> -m_driverController.getRightX(), // Rotation (inverted)
             DEADBAND
         )
     );
