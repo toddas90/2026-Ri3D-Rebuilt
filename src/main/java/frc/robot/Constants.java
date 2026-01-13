@@ -37,10 +37,10 @@ public final class Constants {
 
   public static class DriveConstants {
     // Motor CAN IDs
-    public static final int kFrontLeftMotorId = 1;
-    public static final int kFrontRightMotorId = 2;
-    public static final int kRearLeftMotorId = 3;
-    public static final int kRearRightMotorId = 4;
+    public static final int kFrontLeftMotorId = 59;
+    public static final int kFrontRightMotorId = 47;
+    public static final int kRearLeftMotorId = 20;
+    public static final int kRearRightMotorId = 48;
 
     // Wheel offsets from robot center (in meters)
     public static final Translation2d kFrontLeftWheelOffset = new Translation2d(-0.37, 0.2);
@@ -116,10 +116,10 @@ public final class Constants {
     public static final double kTurretD = 0.01;
 
     // Flywheel PID
-    public static final double kFlywheelP = 10;
+    public static final double kFlywheelP = 0.04; // 0.01
     public static final double kFlywheelI = 0.0;
-    public static final double kFlywheelD = 0.0;
-    public static final double kFlywheelFF = 0.000175; // Feedforward (V per RPM)
+    public static final double kFlywheelD = 0.00001;
+    public static final double kFlywheelFF = 0.003; // Feedforward (V per RPM) 0.00018
 
     // Hardware config
     public static final int kHoodServoChannel = 0; // PWM channel
@@ -177,8 +177,8 @@ public final class Constants {
 
   public static class ClimbConstants {
     // Motor CAN IDs
-    public static final int kLiftMotorId = 30;
-    public static final int kPivotMotorId = 31;
+    public static final int kLiftMotorId = 46;
+    public static final int kPivotMotorId = 62;
     
     // Mechanical configuration
     public static final double kLiftGearRatio = 25.0; // 25:1 reduction
