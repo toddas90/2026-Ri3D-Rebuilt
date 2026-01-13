@@ -62,7 +62,7 @@ public class FixedShooterAimingCalculator {
         double tanAngle = Math.tan(angleRad);
         
         // Height difference (assuming robot center height)
-        double shooterHeight = 0.3556; // From turret mounting position
+        double shooterHeight = ShooterConstants.SHOOTER_HEIGHT; // From turret mounting position
         double heightDiff = ShooterConstants.HUB_HEIGHT - shooterHeight;
         
         // Calculate required launch velocity using projectile motion

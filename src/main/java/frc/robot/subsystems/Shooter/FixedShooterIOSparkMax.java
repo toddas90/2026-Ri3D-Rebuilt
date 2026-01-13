@@ -27,8 +27,8 @@ public class FixedShooterIOSparkMax implements FixedShooterIO {
     private double rightTargetRPM = 0.0;
     
     // Assuming you'll define these CAN IDs
-    private static final int LEFT_FLYWHEEL_ID = 20;  // TODO: Set actual ID
-    private static final int RIGHT_FLYWHEEL_ID = 21; // TODO: Set actual ID
+    private static final int LEFT_FLYWHEEL_ID = ShooterConstants.kLeftFlywheelMotorId;
+    private static final int RIGHT_FLYWHEEL_ID = ShooterConstants.kRightFlywheelMotorId;
     
     @SuppressWarnings("removal")
     public FixedShooterIOSparkMax() {
@@ -92,13 +92,13 @@ public class FixedShooterIOSparkMax implements FixedShooterIO {
     @Override
     public void setLeftFlywheelVelocity(double rpm) {
         leftTargetRPM = rpm;
-        leftController.setReference(rpm, ControlType.kVelocity);
+        leftController.setSetpoint(rpm, ControlType.kVelocity);
     }
     
     @Override
     public void setRightFlywheelVelocity(double rpm) {
         rightTargetRPM = rpm;
-        rightController.setReference(rpm, ControlType.kVelocity);
+        rightController.setSetpoint(rpm, ControlType.kVelocity);
     }
     
     @Override

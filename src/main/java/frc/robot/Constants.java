@@ -91,8 +91,8 @@ public final class Constants {
   public static class ShooterConstants {
     // Motor CAN IDs
     public static final int kIndexerMotorId = 2;
-    public static final int kTurretMotorId = 6;
-    public static final int kFlywheelMotorId = 8;
+    public static final int kLeftFlywheelMotorId = 6;
+    public static final int kRightFlywheelMotorId = 8;
     
     // Current limits
     public static final int kIndexerCurrentLimit = 30; // Amps
@@ -100,29 +100,13 @@ public final class Constants {
     public static final int kFlywheelCurrentLimit = 40; // Amps
     
     // Mechanical ratios
-    public static final double kTurretDegreesPerRotation = 360.0 / 50.0; // 50:1 gear ratio TODO: Verify
-    public static final double kHoodDegreesPerRotation = 360.0 / 25.0;   // 25:1 gear ratio TODO: Verify
     public static final double kFlywheelGearRatio = 3.0; // 3:1 gear ratio
-    
-    // Position limits (degrees)
-    public static final double kTurretMinAngle = -180.0;
-    public static final double kTurretMaxAngle = 180.0;
-    public static final double kHoodMinAngle = 0.0;
-    public static final double kHoodMaxAngle = 60.0;
-    
-    // Turret PID
-    public static final double kTurretP = 0.1;
-    public static final double kTurretI = 0.0;
-    public static final double kTurretD = 0.01;
 
     // Flywheel PID
     public static final double kFlywheelP = 0.04; // 0.01
     public static final double kFlywheelI = 0.0;
     public static final double kFlywheelD = 0.00001;
     public static final double kFlywheelFF = 0.003; // Feedforward (V per RPM) 0.00018
-
-    // Hardware config
-    public static final int kHoodServoChannel = 0; // PWM channel
 
     // ==================== AIMING PHYSICS CONSTANTS ====================
     
@@ -131,10 +115,6 @@ public final class Constants {
     public static final double kFlywheelRadius = 1.5 * 0.0254; // 1.5" radius in meters
     public static final double kMaxFlywheelRPM = 10000.0; // Neo 550
     public static final double kLaunchEfficiency = 0.80; // Energy transfer efficiency
-    
-    // Hood angle limits for trajectory
-    public static final double kMinHoodAngle = 75.0; // degrees - distance shot (45.0 originally)
-    public static final double kMaxHoodAngle = 75.0; // degrees - upward shot
     
     // Turret mounting positions (from robot center)
     public static final Translation3d kRightTurretPosition = new Translation3d(
@@ -148,15 +128,6 @@ public final class Constants {
         14.0 * 0.0254, // 0.3556m left (+Y)
         14.0 * 0.0254  // 0.3556m up (Z)
     );
-    
-    // Turret FOV limits (in degrees, 0° = robot forward, positive CCW)
-    // Left turret: can aim anywhere except directly right (-90° ± 22.5°)
-    public static final double kLeftTurretDeadzoneMin = -112.5;  // -90° - 22.5°
-    public static final double kLeftTurretDeadzoneMax = -67.5;   // -90° + 22.5°
-    
-    // Right turret: can aim anywhere except directly left (90° ± 22.5°)
-    public static final double kRightTurretDeadzoneMin = 67.5;   // 90° - 22.5°
-    public static final double kRightTurretDeadzoneMax = 112.5;  // 90° + 22.5°
     
     // ==================== FIELD CONSTANTS ====================
     
