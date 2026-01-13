@@ -66,26 +66,37 @@ public final class Constants {
 
   public static class IntakeConstants {
     // Motor IDs
-    public static final int kPivotMotorId = 9;  // TODO: Update with actual CAN ID
+    public static final int kArmMotorId = 9;  // TODO: Update with actual CAN ID
     public static final int kRollerMotorId = 10; // TODO: Update with actual CAN ID
     
     // Positions (degrees)
-    public static final double kStowedPosition = 0.0;
-    public static final double kDeployedPosition = 90.0;
+    public static final double kInPosition = 0.0;
+    public static final double kOutPosition = 90.0;
     
     // Speeds
     public static final double kIntakeVoltage = 8.0;
     public static final double kEjectVoltage = -4.0;
     
     // Current limits
-    public static final int kPivotCurrentLimit = 30;
+    public static final int kArmCurrentLimit = 30;
     public static final int kRollerCurrentLimit = 20;
     public static final double kRollerStallCurrent = 15.0;
     
     // PID values (tune these)
-    public static final double kPivotP = 0.1;
-    public static final double kPivotI = 0.0;
-    public static final double kPivotD = 0.0;
+    public static final double kArmP = 0.2;
+    public static final double kArmI = 0.0;
+    public static final double kArmD = 0.05;
+
+    // Tolerances
+    public static final double kArmPositionTolerance = 2.0; // degrees
+
+    // Mechanical configuration
+    public static final double kArmGearRatio = 1.0; // 100:
+    public static final double kRollerGearRatio = 1.0; // 1:
+
+    // Conversion factors
+    public static final double kArmDegreesPerRotation = 360.0 / kArmGearRatio;
+
   }
 
   public static class ShooterConstants {

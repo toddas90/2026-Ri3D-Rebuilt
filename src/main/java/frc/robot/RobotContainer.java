@@ -4,10 +4,12 @@
 
 package frc.robot;
 
+import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AutoAimCommand;
 import frc.robot.commands.FieldOrientedDriveCommand;
 import frc.robot.commands.SimpleShootCommand;
+import frc.robot.commands.IntakeToggleCommand;
 import frc.robot.subsystems.Climb.Climb;
 import frc.robot.subsystems.Climb.ClimbIO;
 import frc.robot.subsystems.Climb.ClimbIOSim;
@@ -18,6 +20,10 @@ import frc.robot.subsystems.Drive.DriveIOSim;
 import frc.robot.subsystems.Drive.DriveIOSparkMax;
 import frc.robot.subsystems.Drive.GyroIO;
 import frc.robot.subsystems.Drive.GyroIOSim;
+import frc.robot.subsystems.Intake.Intake;
+import frc.robot.subsystems.Intake.IntakeIO;
+import frc.robot.subsystems.Intake.IntakeIOSim;
+import frc.robot.subsystems.Intake.IntakeIOSparkMax;
 import frc.robot.subsystems.Drive.GyroIONavX;
 import frc.robot.subsystems.Vision.Vision;
 import frc.robot.subsystems.Vision.VisionIOPhotonVision;
@@ -50,6 +56,7 @@ public class RobotContainer {
   private final Indexer m_indexer;
   private final Climb m_climb;
   private final FixedShooter m_fixedShooter;
+  private final Intake m_intake;
 
   // Controllers
   private final CommandXboxController m_driverController =
@@ -61,6 +68,9 @@ public class RobotContainer {
 
   // Deadband for joystick inputs
   private static final double DEADBAND = OperatorConstants.kControllerDeadband;
+
+  // Add intake toggle command as a field to maintain state
+  private final IntakeToggleCommand intakeToggleCommand;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -75,6 +85,7 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIOSparkMax());
         m_climb = new Climb(new ClimbIOSparkMax());
         m_fixedShooter = new FixedShooter(new FixedShooterIOSparkMax());
+        m_intake = new Intake(new IntakeIOSparkMax());
         break;
 
       case SIM:
@@ -93,6 +104,7 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIOSim());
         m_climb = new Climb(new ClimbIOSim());
         m_fixedShooter = new FixedShooter(new FixedShooterIOSim());
+        m_intake = new Intake(new IntakeIOSim());
         break;
 
       default:
@@ -101,7 +113,11 @@ public class RobotContainer {
         m_indexer = new Indexer(new IndexerIO() {});
         m_climb = new Climb(new ClimbIO() {});
         m_fixedShooter = new FixedShooter(new FixedShooterIO() {});
+        m_intake = new Intake(new IntakeIO() {});
     }
+    
+    // Initialize the intake toggle command after m_intake is created
+    intakeToggleCommand = new IntakeToggleCommand(m_intake);
     
     // Configure the trigger bindings
     configureBindings();
@@ -149,6 +165,9 @@ public class RobotContainer {
         }, m_climb)
     );
 
+
+    // ==================== SHOOTER CONTROLS ====================
+
     // Left Bumper: Simple shoot without aiming
     m_driverController.leftBumper().whileTrue(
         new SimpleShootCommand(m_fixedShooter)
@@ -171,6 +190,12 @@ public class RobotContainer {
             m_indexer
         )
     );
+
+    // ==================== INTAKE CONTROLS ====================
+    
+    // A button: Toggle intake deploy/stow with roller control
+    m_driverController.a().onTrue(intakeToggleCommand);
+
   }
 
   private void configureDefaultCommands() {
