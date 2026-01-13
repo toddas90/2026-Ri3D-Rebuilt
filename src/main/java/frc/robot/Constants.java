@@ -197,7 +197,7 @@ public final class Constants {
     public static final double kPivotMaxAngle = 180.0; // degrees (full flip)
     
     // Lift PID
-    public static final double kLiftP = 5.0;
+    public static final double kLiftP = 20.0;
     public static final double kLiftI = 0.0;
     public static final double kLiftD = 0.1;
     public static final double kLiftFF = 0.0;
