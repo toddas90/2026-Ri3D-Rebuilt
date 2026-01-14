@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import frc.robot.Constants.ClimbConstants;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.AutoAimCommand;
@@ -38,6 +39,7 @@ import frc.robot.subsystems.Shooter.FixedShooterAimingCalculator;
 import frc.robot.subsystems.Shooter.FixedShooterIO;
 import frc.robot.subsystems.Shooter.FixedShooterIOSparkMax;
 import frc.robot.subsystems.Shooter.FixedShooterIOSim;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -149,13 +151,49 @@ public class RobotContainer {
     );
     
     // B Button: Flip robot (toggle between NORMAL and FLIPPED)
-    m_driverController.b().onTrue(
-        Commands.either(
-            Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.NORMAL), m_climb),
-            Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.FLIPPED), m_climb),
-            () -> m_climb.getPivotAngle() > 90.0
-        )
+    // m_driverController.b().onTrue(
+    //     Commands.either(
+    //         Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.NORMAL), m_climb),
+    //         Commands.runOnce(() -> m_climb.setPivotPosition(Climb.PivotPosition.FLIPPED), m_climb),
+    //         () -> m_climb.getPivotAngle() > 90.0
+    //     )
+    // );
+
+    // Set pivot position to current position + 10 degrees when B is pressed
+    // m_driverController.b().onTrue(
+    //     Commands.runOnce(() -> {
+    //         double currentAngle = m_climb.getPivotAngle();
+    //         double targetAngle = MathUtil.clamp(currentAngle + 10.0, 
+    //             ClimbConstants.kPivotMinAngle, ClimbConstants.kPivotMaxAngle);
+    //         m_climb.setPivotAngle(targetAngle);
+    //     }, m_climb)
+    // );
+
+    m_driverController.b().whileTrue(
+        Commands.run(() -> {
+            m_climb.setPivotVoltage(4.0); // Move down at voltage
+        }, m_climb).finallyDo(() -> {
+            m_climb.setPivotVoltage(0.0); // Stop when released
+        })
     );
+
+    // Move pivot when Y is held
+    m_driverController.y().whileTrue(
+        Commands.run(() -> {
+            m_climb.setPivotVoltage(-4.0); // Move up at voltage
+        }, m_climb).finallyDo(() -> {
+            m_climb.setPivotVoltage(0.0); // Stop when released
+        })
+    );
+    // m_driverController.y().onTrue(
+        // Set pivot position to current position - 10 degrees when Y is pressed
+        // Commands.runOnce(() -> {
+        //     double currentAngle = m_climb.getPivotAngle();
+        //     double targetAngle = MathUtil.clamp(currentAngle - 10.0, 
+        //         ClimbConstants.kPivotMinAngle, ClimbConstants.kPivotMaxAngle);
+        //     m_climb.setPivotAngle(targetAngle);
+        // }, m_climb)
+    // );
     
     // Back button: Emergency stop for climb
     m_driverController.back().onTrue(

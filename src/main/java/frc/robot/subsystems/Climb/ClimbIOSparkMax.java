@@ -96,6 +96,7 @@ public class ClimbIOSparkMax implements ClimbIO {
         config.idleMode(IdleMode.kBrake);
         config.smartCurrentLimit(ClimbConstants.kPivotCurrentLimit);
         config.voltageCompensation(12.0);
+        config.inverted(true);
         
         // Configure PID
         config.closedLoop.pidf(
@@ -111,9 +112,9 @@ public class ClimbIOSparkMax implements ClimbIO {
         config.encoder.velocityConversionFactor(ClimbConstants.kPivotDegreesPerRotation / 60.0);
         
         // Soft limits (0 to 180 degrees for full flip)
-        config.softLimit.forwardSoftLimit(ClimbConstants.kPivotMaxAngle);
+        // config.softLimit.forwardSoftLimit(ClimbConstants.kPivotMaxAngle);
         config.softLimit.reverseSoftLimit(ClimbConstants.kPivotMinAngle);
-        config.softLimit.forwardSoftLimitEnabled(true);
+        // config.softLimit.forwardSoftLimitEnabled(true);
         config.softLimit.reverseSoftLimitEnabled(true);
         
         return config;

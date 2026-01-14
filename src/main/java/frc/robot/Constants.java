@@ -167,7 +167,7 @@ public final class Constants {
     
     // Mechanical configuration
     public static final double kLiftGearRatio = 25.0; // 25:1 reduction
-    public static final double kPivotGearRatio = 150.0; // 150:1 reduction
+    public static final double kPivotGearRatio = 180.0; // 180:1 reduction
     public static final double kLiftDrumDiameter = 2 * 0.0254; // 2" radius in meters
     
     // // Conversion factors (fixed calculation)
@@ -181,7 +181,7 @@ public final class Constants {
     // Position limits
     public static final double kLiftMinHeight = 0.0; // meters
     public static final double kLiftMaxHeight = 12 * 0.0254; // inches to meters
-    public static final double kLiftBarInsertHeight = 6 * 0.0254; // inches to meters
+    public static final double kLiftBarInsertHeight = 11.5 * 0.0254; // inches to meters
     public static final double kPivotMinAngle = 0.0; // degrees
     public static final double kPivotMaxAngle = 180.0; // degrees (full flip)
     
